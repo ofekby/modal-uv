@@ -119,14 +119,9 @@ def _read_payloads(missing_paths: list[str], manifest: list[FileState]) -> list[
 
 def _query_remote_fingerprint() -> str:
     """Query the deployed app's fingerprint from the remote container."""
-    import modal
+    from modal_uv.deployment import query_deployed_fingerprint
 
-    from modal_uv.deployment import DeploymentMissing
-
-    try:
-        return str(modal.Function.from_name(_app_name, "deployment_fingerprint").remote())
-    except modal.exception.NotFoundError as exc:
-        raise DeploymentMissing(str(exc)) from exc
+    return query_deployed_fingerprint(_app_name)
 
 
 def run_daemon_entry(config_path: Path, repo_root: Path) -> None:

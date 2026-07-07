@@ -14,9 +14,15 @@ import typer
 from modal_uv.client import daemon_status, ensure_daemon, send_request, stop_daemon
 from modal_uv.config import ConfigError, ModalUVConfig, ProjectContext, load_config, resolve_project
 from modal_uv.deployment import (
+    DeploymentBroken,
+    DeploymentMissing,
+    deploy_generated_artifact,
     deployment_fingerprint,
     deployment_parameters,
     load_deployment_template,
+    query_deployed_fingerprint,
+    render_deployment,
+    write_deployment_artifact,
 )
 from modal_uv.paths import ensure_repo_state
 from modal_uv.skill import KNOWN_AGENTS, install_to_agent, install_to_all_present, install_to_dir
@@ -38,6 +44,10 @@ def run(
         Path | None,
         typer.Option("--config", "-c", help="Path to modal-uv.yaml config file."),
     ] = None,
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", "-v", help="Stream deployment output to terminal."),
+    ] = False,
 ) -> None:
     """Execute uv <args> on Modal with GPU."""
     uv_args = args or []
@@ -48,6 +58,7 @@ def run(
         raise SystemExit(1) from exc
 
     try:
+        _ensure_deployment_with_notice(config, project.repo_root, verbose=verbose)
         manifest = build_manifest(project.repo_root, _load_tracking_config(config))
         expected_fp = _compute_expected_fingerprint(config, project.repo_root)
 
@@ -573,6 +584,57 @@ def _compute_expected_fingerprint(config: ModalUVConfig, repo_root: Path) -> str
     template = load_deployment_template()
     parameters = deployment_parameters(config)
     return deployment_fingerprint(template, parameters, repo_root)
+
+
+def _ensure_deployment_with_notice(
+    config: ModalUVConfig, repo_root: Path, *, verbose: bool = False
+) -> None:
+    """Check deployment before spawning daemon. Print notice and deploy if needed."""
+    template = load_deployment_template()
+    parameters = deployment_parameters(config)
+    expected_fp = deployment_fingerprint(template, parameters, repo_root)
+    rendered = render_deployment(template, parameters, expected_fp)
+    deployment_path = write_deployment_artifact(repo_root, rendered)
+
+    needs_deploy = False
+    remote_fp: str = ""
+    try:
+        remote_fp = query_deployed_fingerprint(config.app_name)
+    except (DeploymentMissing, DeploymentBroken):
+        needs_deploy = True
+    except Exception:
+        needs_deploy = True
+
+    if not needs_deploy and remote_fp == expected_fp:
+        return
+
+    if needs_deploy:
+        typer.echo("[modal-uv] Deploying app to Modal...", err=True)
+    else:
+        typer.echo("[modal-uv] Redeploying app (deployment changed)...", err=True)
+
+    deploy_generated_artifact(deployment_path, verbose=verbose)
+    _wait_for_deployment_ready(config.app_name, expected_fp)
+
+
+def _wait_for_deployment_ready(
+    app_name: str, expected_fp: str, max_retries: int = 6, interval: float = 10.0
+) -> None:
+    """Poll the deployed fingerprint until it responds with the expected value."""
+    typer.echo("[modal-uv] Waiting for deployment to become ready...", err=True)
+    for attempt in range(1, max_retries + 1):
+        try:
+            remote_fp = query_deployed_fingerprint(app_name)
+            if remote_fp == expected_fp:
+                typer.echo(f"[modal-uv] Deployment ready (attempt {attempt}).", err=True)
+                return
+        except (DeploymentMissing, DeploymentBroken, Exception):
+            pass
+        time.sleep(interval)
+    typer.echo(
+        f"[modal-uv] Deployment not ready after {max_retries} attempts, proceeding anyway.",
+        err=True,
+    )
 
 
 def _sync_and_spawn(

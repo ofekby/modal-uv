@@ -21,8 +21,6 @@ from __future__ import annotations
 
 from modal_uv.app import create_app
 
-DEPLOYMENT_FINGERPRINT = {fingerprint!r}
-
 app = create_app(
     app_name={app_name!r},
     gpu={gpu!r},
@@ -31,17 +29,17 @@ app = create_app(
     commit_interval_seconds={commit_interval_seconds!r},
     work_dir={work_dir!r},
     image_base={image_base!r},
+    fingerprint={fingerprint!r},
 )
-
-
-@app.function()
-def deployment_fingerprint() -> str:
-    return DEPLOYMENT_FINGERPRINT
 '''
 
 
 class DeploymentMissing(RuntimeError):
     """Raised when the deployed Modal app or fingerprint function is missing."""
+
+
+class DeploymentBroken(RuntimeError):
+    """Raised when the deployed fingerprint function exists but cannot be queried."""
 
 
 def deployment_parameters(config: ModalUVConfig) -> dict[str, Any]:
@@ -156,6 +154,7 @@ def ensure_deployment_current(
     *,
     query_remote_fingerprint: Callable[[str], str] | None = None,
     deploy_artifact: Callable[[Path], None] | None = None,
+    verbose: bool = False,
 ) -> str:
     """Ensure the Modal deployment matches local config and return its fingerprint."""
     template = load_deployment_template()
@@ -165,11 +164,11 @@ def ensure_deployment_current(
     deployment_path = write_deployment_artifact(repo_root, rendered)
 
     query = query_remote_fingerprint or query_deployed_fingerprint
-    deploy = deploy_artifact or deploy_generated_artifact
+    deploy = deploy_artifact or _default_deploy
 
     try:
         remote_fingerprint = query(config.app_name)
-    except DeploymentMissing:
+    except (DeploymentMissing, DeploymentBroken):
         deploy(deployment_path)
         return fingerprint
 
@@ -184,11 +183,24 @@ def query_deployed_fingerprint(app_name: str) -> str:
     import modal
 
     try:
-        return str(modal.Function.from_name(app_name, "deployment_fingerprint").remote())
+        call = modal.Function.from_name(app_name, "deployment_fingerprint").spawn()
+        return str(call.get(timeout=30))
     except modal.exception.NotFoundError as exc:
         raise DeploymentMissing(str(exc)) from exc
+    except modal.exception.ExecutionError as exc:
+        raise DeploymentBroken(str(exc)) from exc
+    except modal.exception.TimeoutError as exc:
+        raise DeploymentBroken(str(exc)) from exc
 
 
-def deploy_generated_artifact(deployment_path: Path) -> None:
+def deploy_generated_artifact(deployment_path: Path, *, verbose: bool = False) -> None:
     """Deploy the generated Modal app artifact."""
-    subprocess.run([sys.executable, "-m", "modal", "deploy", str(deployment_path)], check=True)
+    cmd = [sys.executable, "-m", "modal", "deploy", str(deployment_path)]
+    if verbose:
+        subprocess.run(cmd, check=True)
+    else:
+        subprocess.run(cmd, check=True, capture_output=True)
+
+
+def _default_deploy(deployment_path: Path) -> None:
+    deploy_generated_artifact(deployment_path)

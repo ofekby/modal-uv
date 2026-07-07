@@ -12,6 +12,7 @@ import pytest
 from typer.testing import CliRunner
 
 from modal_uv.cli import app
+from modal_uv.deployment import DeploymentBroken, DeploymentMissing
 from modal_uv.sync import FileState
 
 runner = CliRunner()
@@ -36,6 +37,7 @@ def test_help_lists_commands() -> None:
     assert "daemon-status-cmd" in result.stdout
 
 
+@patch("modal_uv.cli._ensure_deployment_with_notice")
 @patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
 @patch("modal_uv.cli.send_request")
 @patch("modal_uv.cli.ensure_daemon")
@@ -43,6 +45,7 @@ def test_run_prints_spawned_execution_id(
     mock_ensure: MagicMock,
     mock_send: MagicMock,
     mock_fp: MagicMock,
+    mock_deploy: MagicMock,
     tmp_path: Path,
 ) -> None:
     yaml_path = _write_yaml(
@@ -84,6 +87,7 @@ def test_run_prints_spawned_execution_id(
     assert mock_send.call_count == 2
 
 
+@patch("modal_uv.cli._ensure_deployment_with_notice")
 @patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
 @patch("modal_uv.cli.send_request")
 @patch("modal_uv.cli.ensure_daemon")
@@ -93,6 +97,7 @@ def test_run_discovers_repo_root_from_nested_cwd(
     mock_ensure: MagicMock,
     mock_send: MagicMock,
     mock_fp: MagicMock,
+    mock_deploy: MagicMock,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -123,6 +128,7 @@ def test_run_discovers_repo_root_from_nested_cwd(
     assert ".modal-uv/" in (tmp_path / ".gitignore").read_text(encoding="utf-8")
 
 
+@patch("modal_uv.cli._ensure_deployment_with_notice")
 @patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
 @patch("modal_uv.cli.send_request")
 @patch("modal_uv.cli.ensure_daemon")
@@ -132,6 +138,7 @@ def test_run_passes_sync_ignore_to_manifest(
     mock_ensure: MagicMock,
     mock_send: MagicMock,
     mock_fp: MagicMock,
+    mock_deploy: MagicMock,
     tmp_path: Path,
 ) -> None:
     yaml_path = _write_yaml(
@@ -159,6 +166,7 @@ def test_run_passes_sync_ignore_to_manifest(
     assert tracking_config.ignore == ("data/**",)
 
 
+@patch("modal_uv.cli._ensure_deployment_with_notice")
 @patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
 @patch("modal_uv.cli.send_request")
 @patch("modal_uv.cli.ensure_daemon")
@@ -166,6 +174,7 @@ def test_run_fails_before_spawn_when_daemon_returns_error(
     mock_ensure: MagicMock,
     mock_send: MagicMock,
     mock_fp: MagicMock,
+    mock_deploy: MagicMock,
     tmp_path: Path,
 ) -> None:
     yaml_path = _write_yaml(
@@ -195,6 +204,7 @@ def test_run_fails_before_spawn_when_daemon_returns_error(
     assert result.exit_code == 1
 
 
+@patch("modal_uv.cli._ensure_deployment_with_notice")
 @patch("modal_uv.cli.stop_daemon")
 @patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
 @patch("modal_uv.cli.send_request")
@@ -206,6 +216,7 @@ def test_run_restarts_daemon_on_fingerprint_mismatch(
     mock_send: MagicMock,
     mock_fp: MagicMock,
     mock_stop: MagicMock,
+    mock_deploy: MagicMock,
     tmp_path: Path,
 ) -> None:
     yaml_path = _write_yaml(
@@ -235,6 +246,7 @@ def test_run_restarts_daemon_on_fingerprint_mismatch(
     assert first_call.args[2]["expected_fingerprint"] == "expected-fp"
 
 
+@patch("modal_uv.cli._ensure_deployment_with_notice")
 @patch("modal_uv.cli.stop_daemon")
 @patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
 @patch("modal_uv.cli.send_request")
@@ -246,6 +258,7 @@ def test_run_fails_when_restart_still_returns_restart_needed(
     mock_send: MagicMock,
     mock_fp: MagicMock,
     mock_stop: MagicMock,
+    mock_deploy: MagicMock,
     tmp_path: Path,
 ) -> None:
     yaml_path = _write_yaml(
@@ -269,6 +282,129 @@ def test_run_fails_when_restart_still_returns_restart_needed(
     mock_stop.assert_called_once_with(tmp_path)
     result = runner.invoke(app, ["run", "pytest", "--config", str(tmp_path / "missing.yaml")])
     assert result.exit_code == 1
+
+
+@patch("modal_uv.cli._wait_for_deployment_ready")
+@patch("modal_uv.cli.deploy_generated_artifact")
+@patch("modal_uv.cli.query_deployed_fingerprint", side_effect=DeploymentMissing("no app"))
+def test_deploy_notice_printed_when_app_missing(
+    mock_query: MagicMock, mock_deploy: MagicMock, mock_wait: MagicMock, tmp_path: Path
+) -> None:
+    from modal_uv.cli import _ensure_deployment_with_notice
+    from modal_uv.config import load_config
+
+    _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        volume:
+          name: "test-volume"
+        """,
+    )
+    config = load_config(tmp_path / "modal-uv.yaml")
+
+    _ensure_deployment_with_notice(config, tmp_path)
+
+    mock_deploy.assert_called_once()
+    assert (tmp_path / ".modal-uv" / "deployment.py").exists()
+
+
+@patch("modal_uv.cli._wait_for_deployment_ready")
+@patch("modal_uv.cli.deploy_generated_artifact")
+@patch("modal_uv.cli.query_deployed_fingerprint", side_effect=DeploymentBroken("crash"))
+def test_deploy_notice_printed_when_app_broken(
+    mock_query: MagicMock, mock_deploy: MagicMock, mock_wait: MagicMock, tmp_path: Path
+) -> None:
+    from modal_uv.cli import _ensure_deployment_with_notice
+    from modal_uv.config import load_config
+
+    _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        volume:
+          name: "test-volume"
+        """,
+    )
+    config = load_config(tmp_path / "modal-uv.yaml")
+
+    _ensure_deployment_with_notice(config, tmp_path)
+
+    mock_deploy.assert_called_once()
+
+
+@patch("modal_uv.cli._wait_for_deployment_ready")
+@patch("modal_uv.cli.deploy_generated_artifact")
+@patch("modal_uv.cli.query_deployed_fingerprint", return_value="stale-fp")
+def test_redeploy_notice_printed_when_fingerprint_mismatches(
+    mock_query: MagicMock, mock_deploy: MagicMock, mock_wait: MagicMock, tmp_path: Path
+) -> None:
+    from modal_uv.cli import _ensure_deployment_with_notice
+    from modal_uv.config import load_config
+
+    _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        volume:
+          name: "test-volume"
+        """,
+    )
+    config = load_config(tmp_path / "modal-uv.yaml")
+
+    _ensure_deployment_with_notice(config, tmp_path)
+
+    mock_deploy.assert_called_once()
+
+
+@patch("modal_uv.cli.deploy_generated_artifact")
+@patch("modal_uv.cli.query_deployed_fingerprint")
+def test_no_deploy_when_fingerprint_matches(
+    mock_query: MagicMock, mock_deploy: MagicMock, tmp_path: Path
+) -> None:
+    from modal_uv.cli import _compute_expected_fingerprint, _ensure_deployment_with_notice
+    from modal_uv.config import load_config
+
+    _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        volume:
+          name: "test-volume"
+        """,
+    )
+    config = load_config(tmp_path / "modal-uv.yaml")
+    expected_fp = _compute_expected_fingerprint(config, tmp_path)
+    mock_query.return_value = expected_fp
+
+    _ensure_deployment_with_notice(config, tmp_path)
+
+    mock_deploy.assert_not_called()
+
+
+@patch("modal_uv.cli._wait_for_deployment_ready")
+@patch("modal_uv.cli.deploy_generated_artifact")
+@patch("modal_uv.cli.query_deployed_fingerprint", side_effect=DeploymentMissing("no app"))
+def test_verbose_flag_passed_to_deploy(
+    mock_query: MagicMock, mock_deploy: MagicMock, mock_wait: MagicMock, tmp_path: Path
+) -> None:
+    from modal_uv.cli import _ensure_deployment_with_notice
+    from modal_uv.config import load_config
+
+    _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        volume:
+          name: "test-volume"
+        """,
+    )
+    config = load_config(tmp_path / "modal-uv.yaml")
+
+    _ensure_deployment_with_notice(config, tmp_path, verbose=True)
+
+    mock_deploy.assert_called_once()
+    assert mock_deploy.call_args.kwargs["verbose"] is True
 
 
 @patch("modal_uv.cli.subprocess")
@@ -469,6 +605,7 @@ def test_onboard_runs_modal_oauth_then_installs_skills(
         mock_proc = MagicMock()
         mock_proc.stdout = iter(oauth_lines)
         mock_proc.returncode = 0
+        mock_proc.wait.return_value = 0
         mock_popen.return_value = mock_proc
 
         result = runner.invoke(app, ["onboard"])
@@ -490,6 +627,7 @@ def test_onboard_fails_when_modal_oauth_fails(
         mock_proc = MagicMock()
         mock_proc.stdout = iter(["some error\n"])
         mock_proc.returncode = 1
+        mock_proc.wait.return_value = 1
         mock_popen.return_value = mock_proc
 
         result = runner.invoke(app, ["onboard"])

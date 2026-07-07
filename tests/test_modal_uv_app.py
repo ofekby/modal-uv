@@ -16,6 +16,7 @@ def _make_config() -> dict[str, Any]:
         "volume_mount_path": "/mnt/volume",
         "work_dir": "/tmp/work",
         "image_base": "python:3.12-slim",
+        "fingerprint": "abc123",
     }
 
 
@@ -27,7 +28,8 @@ def _setup_mocks(mock_modal: MagicMock) -> MagicMock:
     image_chain = mock_modal.Image.from_registry.return_value
     env_result = MagicMock()
     env_result.add_local_python_source.return_value = image_mock
-    image_chain.apt_install.return_value.run_commands.return_value.env.return_value = env_result
+    run_commands = image_chain.apt_install.return_value.run_commands.return_value
+    run_commands.pip_install.return_value.env.return_value = env_result
     return mock_app
 
 
@@ -70,7 +72,7 @@ def test_create_app_configures_uv_to_use_system_environment(mock_modal: MagicMoc
     create_app(**_make_config())
 
     run_commands = mock_modal.Image.from_registry.return_value.apt_install.return_value.run_commands
-    env_call = run_commands.return_value.env
+    env_call = run_commands.return_value.pip_install.return_value.env
     env_call.assert_called_once()
     assert env_call.call_args.args[0]["UV_PROJECT_ENVIRONMENT"] == "/usr/local"
 
@@ -90,3 +92,26 @@ def test_create_app_accepts_volume_commit_interval(mock_modal: MagicMock) -> Non
     _setup_mocks(mock_modal)
 
     create_app(**_make_config(), commit_interval_seconds=45)
+
+
+@patch("modal_uv.app.modal")
+def test_create_app_registers_deployment_fingerprint_on_custom_image(mock_modal: MagicMock) -> None:
+    mock_app = _setup_mocks(mock_modal)
+
+    create_app(**_make_config())
+
+    func_kwargs = mock_app.function.call_args.kwargs
+    from_reg = mock_modal.Image.from_registry.return_value
+    chain = from_reg.apt_install.return_value.run_commands.return_value
+    chain = chain.pip_install.return_value.env.return_value
+    assert func_kwargs["image"] is chain.add_local_python_source.return_value
+    assert func_kwargs["serialized"] is True
+
+
+@patch("modal_uv.app.modal")
+def test_create_app_registers_deployment_fingerprint_function(mock_modal: MagicMock) -> None:
+    mock_app = _setup_mocks(mock_modal)
+
+    create_app(**_make_config())
+
+    assert mock_app.function.called

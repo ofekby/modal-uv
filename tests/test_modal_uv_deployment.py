@@ -2,17 +2,20 @@ from __future__ import annotations
 
 from pathlib import Path
 from textwrap import dedent
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from modal_uv.config import load_config
 from modal_uv.deployment import (
+    DeploymentBroken,
     DeploymentMissing,
     deployment_fingerprint,
     deployment_parameters,
     ensure_deployment_current,
     load_deployment_template,
     pyproject_sha256,
+    query_deployed_fingerprint,
     render_deployment,
     write_deployment_artifact,
 )
@@ -152,7 +155,18 @@ def test_render_deployment_embeds_fingerprint(tmp_path: Path) -> None:
     rendered = render_deployment(template, params, fingerprint)
 
     assert fingerprint in rendered
-    assert "deployment_fingerprint" in rendered
+    assert "fingerprint=" in rendered
+
+
+def test_render_deployment_does_not_define_standalone_fingerprint_function(tmp_path: Path) -> None:
+    config = _config(tmp_path)
+    params = deployment_parameters(config)
+    template = load_deployment_template()
+    fingerprint = deployment_fingerprint(template, params, tmp_path)
+
+    rendered = render_deployment(template, params, fingerprint)
+
+    assert "@app.function" not in rendered
 
 
 def test_render_deployment_embeds_volume_commit_interval(tmp_path: Path) -> None:
@@ -242,3 +256,57 @@ def test_ensure_deployment_current_propagates_unexpected_query_errors(tmp_path: 
         )
 
     assert deployed == []
+
+
+def test_query_deployed_fingerprint_raises_broken_on_timeout() -> None:
+    import modal.exception
+
+    with patch("modal.Function.from_name") as mock_fn:
+        mock_call = MagicMock()
+        mock_call.get.side_effect = modal.exception.TimeoutError("timed out")
+        mock_fn.return_value.spawn.return_value = mock_call
+
+        with pytest.raises(DeploymentBroken, match="timed out"):
+            query_deployed_fingerprint("test-app")
+
+
+def test_query_deployed_fingerprint_raises_missing_on_not_found() -> None:
+    import modal.exception
+
+    with patch("modal.Function.from_name") as mock_fn:
+        mock_call = MagicMock()
+        mock_call.get.side_effect = modal.exception.NotFoundError("no such function")
+        mock_fn.return_value.spawn.return_value = mock_call
+
+        with pytest.raises(DeploymentMissing, match="no such function"):
+            query_deployed_fingerprint("test-app")
+
+
+def test_query_deployed_fingerprint_uses_spawn_and_get_with_timeout() -> None:
+    with patch("modal.Function.from_name") as mock_fn:
+        mock_call = MagicMock()
+        mock_call.get.return_value = "abc123"
+        mock_fn.return_value.spawn.return_value = mock_call
+
+        result = query_deployed_fingerprint("test-app")
+
+        assert result == "abc123"
+        mock_fn.return_value.spawn.assert_called_once()
+        mock_call.get.assert_called_once_with(timeout=30)
+
+
+def test_ensure_deployment_current_redeploys_on_broken_deployment(tmp_path: Path) -> None:
+    config = _config(tmp_path)
+    deployed: list[Path] = []
+
+    fingerprint = ensure_deployment_current(
+        config,
+        tmp_path,
+        query_remote_fingerprint=lambda app_name: (_ for _ in ()).throw(
+            DeploymentBroken("crash-loop")
+        ),
+        deploy_artifact=deployed.append,
+    )
+
+    assert deployed == [tmp_path / ".modal-uv" / "deployment.py"]
+    assert fingerprint in deployed[0].read_text(encoding="utf-8")

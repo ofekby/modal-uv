@@ -30,6 +30,7 @@ def create_app(
     volume_mount_path: str,
     work_dir: str,
     image_base: str,
+    fingerprint: str,
     commit_interval_seconds: int = COMMIT_INTERVAL_SECONDS,
 ) -> modal.App:
     """Create a Modal app from config."""
@@ -44,6 +45,7 @@ def create_app(
         modal.Image.from_registry(image_base)
         .apt_install("curl")
         .run_commands("curl -LsSf https://astral.sh/uv/install.sh | sh")
+        .pip_install("pathspec")
         .env(
             {
                 "PATH": "/root/.local/bin:/usr/local/bin:/usr/bin:/bin",
@@ -56,6 +58,10 @@ def create_app(
         )
         .add_local_python_source("modal_uv")
     )
+
+    @app.function(image=image, serialized=True, name="deployment_fingerprint")
+    def _deployment_fingerprint() -> str:
+        return fingerprint
 
     cls_options: dict[str, Any] = {
         "volumes": {volume_mount_path: modal_volume},
