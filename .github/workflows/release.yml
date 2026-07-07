@@ -99,6 +99,14 @@ jobs:
           }
 
           current_version="$(version_at HEAD)"
+          if ! git rev-parse --verify --quiet HEAD^ >/dev/null; then
+            echo "Initial commit has no parent; skipping publish."
+            echo "version=${current_version}" >> "$GITHUB_OUTPUT"
+            echo "tag=v${current_version}" >> "$GITHUB_OUTPUT"
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           previous_version="$(version_at HEAD^)"
           tag="v${current_version}"
 
