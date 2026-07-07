@@ -1,0 +1,159 @@
+name: Release
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        id: setup-uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          # Keep one stable uv cache per OS/Python so first PR runs can restore
+          # the cache populated by main. uv's cache is content-addressed; stale
+          # entries are safe, and missing artifacts are fetched during sync.
+          cache-dependency-glob: ""
+          cache-suffix: modal-uv-ci
+          restore-cache: true
+          save-cache: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+
+      - name: Show uv cache status
+        run: |
+          echo "uv cache key: ${{ steps.setup-uv.outputs.cache-key }}"
+          echo "uv cache hit: ${{ steps.setup-uv.outputs.cache-hit }}"
+
+      - name: Install dependencies
+        run: uv sync --frozen --dev
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      - name: Type check
+        run: uv run ty check
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Build package
+        run: uv build
+
+      - name: Upload distributions
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-distributions
+          path: dist/
+          if-no-files-found: error
+
+  release-gate:
+    name: Release gate
+    runs-on: ubuntu-latest
+    needs: checks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+
+    outputs:
+      should_publish: ${{ steps.release.outputs.should_publish }}
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect version bump
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version_at() {
+            local rev="$1"
+            python - "$rev" <<'PY'
+          import subprocess
+          import sys
+          import tomllib
+
+          rev = sys.argv[1]
+          data = subprocess.check_output(["git", "show", f"{rev}:pyproject.toml"])
+          print(tomllib.loads(data.decode())["project"]["version"])
+          PY
+          }
+
+          current_version="$(version_at HEAD)"
+          previous_version="$(version_at HEAD^)"
+          tag="v${current_version}"
+
+          echo "version=${current_version}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+
+          if [[ "${current_version}" == "${previous_version}" ]]; then
+            echo "Version unchanged (${current_version}); skipping publish."
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git fetch --tags --quiet
+          if git rev-parse --verify --quiet "refs/tags/${tag}" >/dev/null; then
+            echo "Tag ${tag} already exists; skipping publish."
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Version changed ${previous_version} -> ${current_version}; publishing ${tag}."
+          echo "should_publish=true" >> "$GITHUB_OUTPUT"
+
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: release-gate
+    if: needs.release-gate.outputs.should_publish == 'true'
+    environment:
+      name: pypi
+      url: https://pypi.org/p/modal-uv
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download distributions
+        uses: actions/download-artifact@v5
+        with:
+          name: python-distributions
+          path: dist/
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Create and push tag
+        env:
+          TAG: ${{ needs.release-gate.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "Release ${TAG}"
+          git push origin "${TAG}"

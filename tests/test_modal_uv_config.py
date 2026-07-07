@@ -1,0 +1,312 @@
+"""Tests for modal-uv config loading."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from textwrap import dedent
+
+import pytest
+
+from modal_uv.config import ConfigError, load_config, resolve_project
+from modal_uv.paths import daemon_log_path, daemon_paths, ensure_repo_state
+
+
+def _write_yaml(tmp_path: Path, content: str) -> Path:
+    path = tmp_path / "modal-uv.yaml"
+    path.write_text(dedent(content))
+    return path
+
+
+def test_minimal_valid_yaml(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        gpu: "T4"
+        volume:
+          name: "test-volume"
+        """,
+    )
+    config = load_config(path)
+    assert config.app_name == "test-app"
+    assert config.gpu == "T4"
+    assert config.volume.name == "test-volume"
+
+
+def test_resolve_project_walks_up_from_nested_directory(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        volume:
+          name: "test-volume"
+        """,
+    )
+    nested = tmp_path / "src" / "package"
+    nested.mkdir(parents=True)
+
+    project = resolve_project(start=nested)
+
+    assert project.repo_root == tmp_path
+    assert project.config_path == path
+
+
+def test_resolve_project_uses_config_parent_when_explicit(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        volume:
+          name: "test-volume"
+        """,
+    )
+    unrelated = tmp_path / "unrelated"
+    unrelated.mkdir()
+
+    project = resolve_project(path, start=unrelated)
+
+    assert project.repo_root == tmp_path
+    assert project.config_path == path
+
+
+def test_resolve_project_missing_yaml_fails(tmp_path: Path) -> None:
+    with pytest.raises(ConfigError, match="modal-uv.yaml"):
+        resolve_project(start=tmp_path)
+
+
+def test_daemon_paths_live_under_modal_uv_state_dir(tmp_path: Path) -> None:
+    pid_path, sock_path = daemon_paths(tmp_path)
+
+    assert pid_path == tmp_path / ".modal-uv" / "daemon.pid"
+    assert sock_path == tmp_path / ".modal-uv" / "daemon.sock"
+    assert daemon_log_path(tmp_path) == tmp_path / ".modal-uv" / "daemon.log"
+
+
+def test_ensure_repo_state_creates_state_dir_and_gitignore(tmp_path: Path) -> None:
+    ensure_repo_state(tmp_path)
+
+    assert (tmp_path / ".modal-uv").is_dir()
+    assert (tmp_path / ".gitignore").read_text(encoding="utf-8") == ".modal-uv/\n"
+
+
+def test_ensure_repo_state_appends_gitignore_entry(tmp_path: Path) -> None:
+    gitignore = tmp_path / ".gitignore"
+    gitignore.write_text(".venv/\n", encoding="utf-8")
+
+    ensure_repo_state(tmp_path)
+
+    assert gitignore.read_text(encoding="utf-8") == ".venv/\n.modal-uv/\n"
+
+
+def test_ensure_repo_state_does_not_duplicate_gitignore_entry(tmp_path: Path) -> None:
+    gitignore = tmp_path / ".gitignore"
+    gitignore.write_text(".modal-uv/\n", encoding="utf-8")
+
+    ensure_repo_state(tmp_path)
+    ensure_repo_state(tmp_path)
+
+    assert gitignore.read_text(encoding="utf-8") == ".modal-uv/\n"
+
+
+def test_full_yaml(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "my-app"
+        gpu: "A100"
+        work_dir: "/custom/work"
+
+        volume:
+          name: "my-volume"
+          mount_path: "/custom/cache"
+
+        image:
+          python_version: "3.11"
+          base_image: "python:3.11-slim"
+
+        sync:
+          ignore:
+            - data/**
+            - "*.ckpt"
+        """,
+    )
+    config = load_config(path)
+    assert config.app_name == "my-app"
+    assert config.gpu == "A100"
+    assert config.work_dir == Path("/custom/work")
+    assert config.volume.name == "my-volume"
+    assert config.volume.mount_path == Path("/custom/cache")
+    assert config.image.python_version == "3.11"
+    assert config.image.base_image == "python:3.11-slim"
+    assert config.sync.ignore == ("data/**", "*.ckpt")
+
+
+def test_missing_yaml_fails(tmp_path: Path) -> None:
+    path = tmp_path / "modal-uv.yaml"
+    with pytest.raises(ConfigError, match="config file not found"):
+        load_config(path)
+
+
+def test_invalid_gpu_fails(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        gpu: "INVALID"
+        volume:
+          name: "test-volume"
+        """,
+    )
+    with pytest.raises(ConfigError, match="gpu"):
+        load_config(path)
+
+
+def test_missing_app_name_fails(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        gpu: "T4"
+        volume:
+          name: "test-volume"
+        """,
+    )
+    with pytest.raises(ConfigError, match="app_name"):
+        load_config(path)
+
+
+def test_missing_volume_name_fails(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        gpu: "T4"
+        volume:
+          mount_path: "/custom/cache"
+        """,
+    )
+    with pytest.raises(ConfigError, match="volume.name"):
+        load_config(path)
+
+
+def test_defaults_applied(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        volume:
+          name: "test-volume"
+        """,
+    )
+    config = load_config(path)
+    assert config.gpu is None
+    assert config.work_dir == Path("/root/work")
+    assert config.volume.mount_path == Path("/root/.cache")
+    assert config.image.python_version == "3.12"
+    assert config.image.base_image == "python:3.12-slim"
+    assert config.sync.ignore == ()
+    assert config.volume.commit_interval_seconds == 30
+
+
+def test_commit_interval_seconds_is_configurable(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        volume:
+          name: "test-volume"
+          commit_interval_seconds: 60
+        """,
+    )
+    config = load_config(path)
+    assert config.volume.commit_interval_seconds == 60
+
+
+def test_commit_interval_seconds_must_be_positive(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        volume:
+          name: "test-volume"
+          commit_interval_seconds: 0
+        """,
+    )
+
+    with pytest.raises(ConfigError, match="commit_interval_seconds"):
+        load_config(path)
+
+
+def test_preload_is_not_part_of_public_config(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        volume:
+          name: "test-volume"
+        """,
+    )
+    config = load_config(path)
+
+    assert not hasattr(config, "preload")
+
+
+def test_sync_ignore_trims_blank_entries(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        volume:
+          name: "test-volume"
+        sync:
+          ignore:
+            - " data/** "
+            - ""
+            - "*.ckpt"
+        """,
+    )
+    config = load_config(path)
+
+    assert config.sync.ignore == ("data/**", "*.ckpt")
+
+
+def test_env_does_not_override_yaml(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        gpu: "T4"
+        volume:
+          name: "test-volume"
+        """,
+    )
+    monkeypatch.setenv("MODAL_UV_GPU", "A100")
+    config = load_config(path)
+    assert config.gpu == "T4"
+
+
+def test_a100_80gb_gpu_is_allowed(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        gpu: "a100-80gb"
+        volume:
+          name: "test-volume"
+        """,
+    )
+    config = load_config(path)
+    assert config.gpu == "A100-80GB"
+
+
+def test_gpu_case_normalized(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        gpu: "a100"
+        volume:
+          name: "test-volume"
+        """,
+    )
+    config = load_config(path)
+    assert config.gpu == "A100"
