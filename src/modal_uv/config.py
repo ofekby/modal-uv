@@ -51,6 +51,7 @@ class RuntimeConfig:
     """Modal runtime behavior configuration."""
 
     scaledown_window_seconds: int
+    exec: str | None
 
 
 @dataclass(frozen=True)
@@ -125,6 +126,7 @@ class _RawRuntime(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     scaledown_window_seconds: int = _DEFAULT_SCALEDOWN_WINDOW_SECONDS
+    exec: str | None = None
 
     @field_validator("scaledown_window_seconds")
     @classmethod
@@ -132,6 +134,14 @@ class _RawRuntime(BaseModel):
         if value <= 0:
             raise ValueError("scaledown_window_seconds must be greater than 0")
         return value
+
+    @field_validator("exec")
+    @classmethod
+    def validate_exec(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        return stripped or None
 
 
 class _RawSettings(BaseSettings):
@@ -238,6 +248,7 @@ def load_config(config_path: Path | None = None) -> ModalUVConfig:
         env=tuple(settings.env.items()),
         runtime=RuntimeConfig(
             scaledown_window_seconds=settings.runtime.scaledown_window_seconds,
+            exec=settings.runtime.exec,
         ),
         image=ImageConfig(
             python_version=settings.image.python_version,

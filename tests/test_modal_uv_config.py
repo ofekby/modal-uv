@@ -215,6 +215,33 @@ def test_defaults_applied(tmp_path: Path) -> None:
     assert config.sync.ignore == ()
     assert config.volumes[0].commit_interval_seconds == 30
     assert config.runtime.scaledown_window_seconds == 300
+    assert config.runtime.exec is None
+
+
+def test_runtime_exec_is_configurable(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        runtime:
+          exec: "bash"
+        """,
+    )
+    config = load_config(path)
+    assert config.runtime.exec == "bash"
+
+
+def test_blank_runtime_exec_normalizes_to_none(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        runtime:
+          exec: "  "
+        """,
+    )
+    config = load_config(path)
+    assert config.runtime.exec is None
 
 
 def test_commit_interval_seconds_is_configurable(tmp_path: Path) -> None:

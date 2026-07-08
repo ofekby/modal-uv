@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from modal_uv.app import create_app
 
@@ -19,6 +22,7 @@ def _make_config() -> dict[str, Any]:
         "work_dir": "/tmp/work",
         "image_base": "python:3.12-slim",
         "scaledown_window_seconds": 120,
+        "runtime_exec": None,
         "fingerprint": "abc123",
     }
 
@@ -34,6 +38,58 @@ def _setup_mocks(mock_modal: MagicMock) -> MagicMock:
     run_commands = image_chain.apt_install.return_value.run_commands.return_value
     run_commands.pip_install.return_value.env.return_value = env_result
     return mock_app
+
+
+class _PassthroughImage:
+    def apt_install(self, *_args: str) -> _PassthroughImage:
+        return self
+
+    def run_commands(self, *_args: str) -> _PassthroughImage:
+        return self
+
+    def pip_install(self, *_args: str) -> _PassthroughImage:
+        return self
+
+    def env(self, _env: dict[str, str]) -> _PassthroughImage:
+        return self
+
+    def add_local_python_source(self, *_args: str) -> _PassthroughImage:
+        return self
+
+
+class _CapturingApp:
+    worker_cls: type | None = None
+
+    def function(self, **_kwargs: Any):
+        def decorator(fn):
+            return fn
+
+        return decorator
+
+    def cls(self, **_kwargs: Any):
+        def decorator(cls):
+            self.worker_cls = cls
+            return cls
+
+        return decorator
+
+
+def _create_worker(tmp_path: Path, *, runtime_exec: str | None = None):
+    capturing_app = _CapturingApp()
+    fake_modal = MagicMock()
+    fake_modal.App.return_value = capturing_app
+    fake_modal.Image.from_registry.return_value = _PassthroughImage()
+    fake_modal.Volume.from_name.return_value = MagicMock()
+    fake_modal.concurrent.return_value = lambda cls: cls
+    fake_modal.method.return_value = lambda fn: fn
+    config = _make_config()
+    config["work_dir"] = str(tmp_path / "remote")
+    config["volumes"] = []
+    config["runtime_exec"] = runtime_exec
+    with patch("modal_uv.app.modal", fake_modal):
+        create_app(**config)
+    assert capturing_app.worker_cls is not None
+    return capturing_app.worker_cls()
 
 
 @patch("modal_uv.app.modal")
@@ -165,3 +221,74 @@ def test_create_app_merges_user_env_over_infra_defaults(mock_modal: MagicMock) -
     assert env_dict["MY_KEY"] == "val"
     assert env_dict["UV_PROJECT_ENVIRONMENT"] == "/custom"
     assert env_dict["UV_LINK_MODE"] == "copy"
+
+
+def test_worker_run_mode_uses_uv_run_command(tmp_path: Path) -> None:
+    worker = _create_worker(tmp_path)
+
+    with (
+        patch("modal_uv.app.subprocess.run") as mock_run,
+        patch("modal_uv.app.uv_run_command", return_value=["uv", "run", "pytest"]) as mock_uv_run,
+    ):
+        mock_run.return_value.returncode = 0
+        result = worker.sync_and_run([], [], ["pytest"], "run")
+
+    assert result == 0
+    mock_uv_run.assert_called_once_with(["pytest"])
+    mock_run.assert_called_once()
+    assert mock_run.call_args.args[0] == ["uv", "run", "pytest"]
+
+
+def test_worker_exec_mode_uses_configured_shell_without_uv(tmp_path: Path) -> None:
+    worker = _create_worker(tmp_path, runtime_exec="bash")
+
+    with (
+        patch("modal_uv.app.subprocess.run") as mock_run,
+        patch("modal_uv.app.uv_run_command") as mock_uv_run,
+    ):
+        mock_run.return_value.returncode = 0
+        result = worker.sync_and_run([], [], ["echo hi"], "exec")
+
+    assert result == 0
+    mock_uv_run.assert_not_called()
+    assert mock_run.call_args.args[0] == ["bash", "-c", "echo hi"]
+
+
+def test_worker_exec_mode_falls_back_to_remote_shell_env(tmp_path: Path) -> None:
+    worker = _create_worker(tmp_path)
+
+    with (
+        patch.dict("modal_uv.app.os.environ", {"SHELL": "/bin/zsh"}, clear=False),
+        patch("modal_uv.app.subprocess.run") as mock_run,
+    ):
+        mock_run.return_value.returncode = 0
+        worker.sync_and_run([], [], ["pwd"], "exec")
+
+    assert mock_run.call_args.args[0] == ["/bin/zsh", "-c", "pwd"]
+
+
+def test_worker_exec_mode_falls_back_to_bin_sh(tmp_path: Path) -> None:
+    worker = _create_worker(tmp_path)
+
+    with (
+        patch.dict("modal_uv.app.os.environ", {}, clear=True),
+        patch("modal_uv.app.subprocess.run") as mock_run,
+    ):
+        mock_run.return_value.returncode = 0
+        worker.sync_and_run([], [], ["pwd"], "exec")
+
+    assert mock_run.call_args.args[0] == ["/bin/sh", "-c", "pwd"]
+
+
+def test_worker_rejects_unknown_execution_mode(tmp_path: Path) -> None:
+    worker = _create_worker(tmp_path)
+
+    with pytest.raises(ValueError, match="unknown execution mode"):
+        worker.sync_and_run([], [], [], "invalid")
+
+
+def test_worker_exec_mode_rejects_empty_command(tmp_path: Path) -> None:
+    worker = _create_worker(tmp_path)
+
+    with pytest.raises(ValueError, match="exec command is required"):
+        worker.sync_and_run([], [], [], "exec")

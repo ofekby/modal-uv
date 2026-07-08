@@ -33,6 +33,7 @@ def create_app(
     volumes: list[dict[str, Any]],
     env: dict[str, str],
     scaledown_window_seconds: int,
+    runtime_exec: str | None,
     work_dir: str,
     image_base: str,
     fingerprint: str,
@@ -80,7 +81,7 @@ def create_app(
     @app.cls(**cls_options)
     @modal.concurrent(max_inputs=1)
     class Worker:
-        """Sync files and execute uv commands on Modal."""
+        """Sync files and execute commands on Modal."""
 
         @modal.method()
         def plan_sync(self, manifest: list[FileState]) -> list[str]:
@@ -89,13 +90,27 @@ def create_app(
 
         @modal.method()
         def sync_and_run(
-            self, manifest: list[FileState], files: list[FilePayload], args: list[str]
+            self,
+            manifest: list[FileState],
+            files: list[FilePayload],
+            args: list[str],
+            mode: str = "run",
         ) -> int:
-            """Upload missing files and execute uv run <args>."""
+            """Upload missing files and execute a command."""
             os.makedirs(work_dir, exist_ok=True)
             for file in files:
                 file.write_to(Path(work_dir))
             save_state_csv(Path(work_dir) / STATE_FILE_NAME, manifest)
+
+            if mode == "run":
+                command = uv_run_command(args)
+            elif mode == "exec":
+                if not args or not args[0].strip():
+                    raise ValueError("exec command is required")
+                shell = runtime_exec or os.environ.get("SHELL") or "/bin/sh"
+                command = [shell, "-c", args[0]]
+            else:
+                raise ValueError(f"unknown execution mode: {mode}")
 
             stop_event = threading.Event()
             threads: list[threading.Thread] = []
@@ -117,7 +132,7 @@ def create_app(
                 threads.append(t)
 
             result = subprocess.run(
-                uv_run_command(args),
+                command,
                 cwd=work_dir,
                 env=uv_run_env(Path(work_dir)),
             )

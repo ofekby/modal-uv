@@ -7,7 +7,7 @@ import sys
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import uvicorn
 from fastapi import FastAPI, Request
@@ -29,6 +29,7 @@ class SpawnRequest(BaseModel):
     manifest: list[dict]
     missing_paths: list[str]
     args: list[str]
+    mode: Literal["run", "exec"] = "run"
 
 
 class DaemonResponse(BaseModel):
@@ -92,7 +93,7 @@ def spawn(req: SpawnRequest) -> DaemonResponse:
     _last_activity = time.monotonic()
     manifest = [FileState(**item) for item in req.manifest]
     payloads = _read_payloads(req.missing_paths, manifest)
-    call = _worker.sync_and_run.spawn(manifest, payloads, req.args)
+    call = _worker.sync_and_run.spawn(manifest, payloads, req.args, req.mode)
     return DaemonResponse(status="ok", execution_id=call.object_id)
 
 

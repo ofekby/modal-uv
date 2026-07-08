@@ -53,6 +53,18 @@ def _config(tmp_path: Path):
     return load_config(path)
 
 
+def _config_with_runtime_exec(tmp_path: Path):
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        runtime:
+          exec: "bash"
+        """,
+    )
+    return load_config(path)
+
+
 def test_deployment_parameters_exclude_sync_ignore(tmp_path: Path) -> None:
     params = deployment_parameters(_config(tmp_path))
 
@@ -68,9 +80,15 @@ def test_deployment_parameters_exclude_sync_ignore(tmp_path: Path) -> None:
             }
         ],
         "env": {"MY_KEY": "myval"},
-        "runtime": {"scaledown_window_seconds": 120},
+        "runtime": {"scaledown_window_seconds": 120, "exec": None},
         "image": {"python_version": "3.12", "base_image": "python:3.12-slim"},
     }
+
+
+def test_deployment_parameters_include_configured_runtime_exec(tmp_path: Path) -> None:
+    params = deployment_parameters(_config_with_runtime_exec(tmp_path))
+
+    assert params["runtime"]["exec"] == "bash"
 
 
 def test_deployment_fingerprint_is_stable_for_identical_inputs(tmp_path: Path) -> None:
@@ -97,6 +115,19 @@ def test_deployment_fingerprint_changes_when_parameters_change(tmp_path: Path) -
     config = _config(tmp_path)
     first_params = deployment_parameters(config)
     second_params = {**first_params, "gpu": "A100"}
+
+    first = deployment_fingerprint("template", first_params, tmp_path)
+    second = deployment_fingerprint("template", second_params, tmp_path)
+
+    assert first != second
+
+
+def test_deployment_fingerprint_changes_when_runtime_exec_changes(tmp_path: Path) -> None:
+    first_params = deployment_parameters(_config(tmp_path))
+    second_params = {
+        **first_params,
+        "runtime": {**first_params["runtime"], "exec": "bash"},
+    }
 
     first = deployment_fingerprint("template", first_params, tmp_path)
     second = deployment_fingerprint("template", second_params, tmp_path)
@@ -198,6 +229,17 @@ def test_render_deployment_embeds_scaledown_window(tmp_path: Path) -> None:
     rendered = render_deployment(template, params, fingerprint)
 
     assert "scaledown_window_seconds=120" in rendered
+
+
+def test_render_deployment_embeds_runtime_exec(tmp_path: Path) -> None:
+    config = _config_with_runtime_exec(tmp_path)
+    params = deployment_parameters(config)
+    template = load_deployment_template()
+    fingerprint = deployment_fingerprint(template, params, tmp_path)
+
+    rendered = render_deployment(template, params, fingerprint)
+
+    assert "runtime_exec='bash'" in rendered
 
 
 def test_write_deployment_artifact_uses_modal_uv_state_dir(tmp_path: Path) -> None:

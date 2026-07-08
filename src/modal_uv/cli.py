@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shlex
 import subprocess
 import sys
 import time
@@ -63,7 +64,61 @@ def run(
         expected_fp = _compute_expected_fingerprint(config, project.repo_root)
 
         execution_id = _sync_and_spawn(
-            project, manifest, uv_args, expected_fp, _restart_attempted=False
+            project,
+            manifest,
+            uv_args,
+            expected_fp,
+            mode="run",
+            _restart_attempted=False,
+        )
+
+        typer.echo(f"Execution ID: {execution_id}")
+        typer.echo(f"Tail logs: modal-uv logs {execution_id}")
+        typer.echo(f"Abort: modal-uv abort {execution_id}")
+        raise SystemExit(0)
+    except Exception as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise SystemExit(1) from exc
+
+
+@app.command(name="exec")
+def exec_cmd(
+    args: Annotated[
+        list[str] | None,
+        typer.Argument(help="Command passed to the configured remote executor."),
+    ] = None,
+    config_path: Annotated[
+        Path | None,
+        typer.Option("--config", "-c", help="Path to modal-uv.yaml config file."),
+    ] = None,
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", "-v", help="Stream deployment output to terminal."),
+    ] = False,
+) -> None:
+    """Execute a command on Modal."""
+    exec_args = args or []
+    if not exec_args:
+        typer.echo("Error: exec command required", err=True)
+        raise SystemExit(2)
+    try:
+        project, config = _load_project_config(config_path)
+    except ConfigError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise SystemExit(1) from exc
+
+    try:
+        _ensure_deployment_with_notice(config, project.repo_root, verbose=verbose)
+        manifest = build_manifest(project.repo_root, _load_tracking_config(config))
+        expected_fp = _compute_expected_fingerprint(config, project.repo_root)
+
+        execution_id = _sync_and_spawn(
+            project,
+            manifest,
+            [shlex.join(exec_args)],
+            expected_fp,
+            mode="exec",
+            _restart_attempted=False,
         )
 
         typer.echo(f"Execution ID: {execution_id}")
@@ -148,38 +203,6 @@ def abort(
 
     typer.echo(f"Aborted: {execution_id}")
     raise SystemExit(0)
-
-
-@app.command()
-def shell(
-    config_path: Annotated[
-        Path | None,
-        typer.Option("--config", "-c", help="Path to modal-uv.yaml config file."),
-    ] = None,
-) -> None:
-    """Open an interactive shell on Modal."""
-    try:
-        _project, config = _load_project_config(config_path)
-    except ConfigError as exc:
-        typer.echo(f"Error: {exc}", err=True)
-        raise SystemExit(1) from exc
-
-    cmd = [
-        sys.executable,
-        "-m",
-        "modal",
-        "shell",
-    ]
-    for vol in config.volumes:
-        cmd.extend(["--volume", vol.name])
-    if config.gpu is not None:
-        cmd[2:2] = ["--gpu", config.gpu]
-
-    try:
-        result = subprocess.run(cmd)
-        raise SystemExit(result.returncode)
-    except KeyboardInterrupt:
-        raise SystemExit(0) from None
 
 
 @app.command()
@@ -721,9 +744,10 @@ def _wait_for_deployment_ready(
 def _sync_and_spawn(
     project: ProjectContext,
     manifest: list,
-    uv_args: list[str],
+    args: list[str],
     expected_fp: str,
     *,
+    mode: str,
     _restart_attempted: bool,
 ) -> str:
     """Connect to daemon, plan sync, spawn run. Handles restart_needed."""
@@ -744,7 +768,9 @@ def _sync_and_spawn(
                 raise RuntimeError("daemon still reports restart_needed after restart")
             typer.echo("[modal-uv] deployment changed, restarting daemon...", err=True)
             stop_daemon(project.repo_root)
-            return _sync_and_spawn(project, manifest, uv_args, expected_fp, _restart_attempted=True)
+            return _sync_and_spawn(
+                project, manifest, args, expected_fp, mode=mode, _restart_attempted=True
+            )
 
         if resp["status"] == "error":
             raise RuntimeError(resp["message"])
@@ -756,7 +782,8 @@ def _sync_and_spawn(
             {
                 "manifest": [vars(m) for m in manifest],
                 "missing_paths": missing_paths,
-                "args": uv_args,
+                "args": args,
+                "mode": mode,
             },
         )
         if resp["status"] == "error":

@@ -194,3 +194,49 @@ def test_read_payloads_rejects_missing_file(tmp_path: Path) -> None:
     d._repo_root = tmp_path
     with pytest.raises(FileNotFoundError):
         _read_payloads(["missing.py"], [fs])
+
+
+def test_spawn_forwards_run_mode(tmp_path: Path) -> None:
+    worker = MagicMock()
+    worker.sync_and_run.spawn.return_value.object_id = "fc-run"
+    _setup_daemon(tmp_path, worker)
+
+    client = TestClient(app)
+    resp = client.post(
+        "/spawn",
+        json={"manifest": [], "missing_paths": [], "args": ["pytest"], "mode": "run"},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json()["execution_id"] == "fc-run"
+    worker.sync_and_run.spawn.assert_called_once_with([], [], ["pytest"], "run")
+
+
+def test_spawn_forwards_exec_mode(tmp_path: Path) -> None:
+    worker = MagicMock()
+    worker.sync_and_run.spawn.return_value.object_id = "fc-exec"
+    _setup_daemon(tmp_path, worker)
+
+    client = TestClient(app)
+    resp = client.post(
+        "/spawn",
+        json={"manifest": [], "missing_paths": [], "args": ["pwd"], "mode": "exec"},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json()["execution_id"] == "fc-exec"
+    worker.sync_and_run.spawn.assert_called_once_with([], [], ["pwd"], "exec")
+
+
+def test_spawn_rejects_invalid_mode_before_worker_spawn(tmp_path: Path) -> None:
+    worker = MagicMock()
+    _setup_daemon(tmp_path, worker)
+
+    client = TestClient(app)
+    resp = client.post(
+        "/spawn",
+        json={"manifest": [], "missing_paths": [], "args": [], "mode": "invalid"},
+    )
+
+    assert resp.status_code == 422
+    worker.sync_and_run.spawn.assert_not_called()

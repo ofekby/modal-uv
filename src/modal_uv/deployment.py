@@ -27,6 +27,7 @@ app = create_app(
     volumes={volumes!r},
     env={env!r},
     scaledown_window_seconds={scaledown_window_seconds!r},
+    runtime_exec={runtime_exec!r},
     work_dir={work_dir!r},
     image_base={image_base!r},
     fingerprint={fingerprint!r},
@@ -59,6 +60,7 @@ def deployment_parameters(config: ModalUVConfig) -> dict[str, Any]:
         "env": dict(config.env),
         "runtime": {
             "scaledown_window_seconds": config.runtime.scaledown_window_seconds,
+            "exec": config.runtime.exec,
         },
         "image": {
             "python_version": config.image.python_version,
@@ -141,6 +143,7 @@ def render_deployment(template_text: str, parameters: dict[str, Any], fingerprin
         volumes=parameters["volumes"],
         env=parameters["env"],
         scaledown_window_seconds=runtime["scaledown_window_seconds"],
+        runtime_exec=runtime["exec"],
         work_dir=parameters["work_dir"],
         image_base=image["base_image"],
     )

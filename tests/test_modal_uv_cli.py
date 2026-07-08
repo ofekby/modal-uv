@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from shlex import join as shell_join
 from textwrap import dedent
 from unittest.mock import MagicMock, patch
 
@@ -31,7 +32,8 @@ def test_help_lists_commands() -> None:
     assert " py " not in result.stdout
     assert "logs" in result.stdout
     assert "abort" in result.stdout
-    assert "shell" in result.stdout
+    assert "exec" in result.stdout
+    assert "│ shell" not in result.stdout
     assert "status" in result.stdout
     assert "daemon-stop" in result.stdout
     assert "daemon-status-cmd" in result.stdout
@@ -86,6 +88,8 @@ def test_run_prints_spawned_execution_id(
     assert "Tail logs: modal-uv logs fc-123" in result.stdout
     assert "Abort: modal-uv abort fc-123" in result.stdout
     assert mock_send.call_count == 2
+    spawn_payload = mock_send.call_args_list[1].args[2]
+    assert spawn_payload["mode"] == "run"
 
 
 @patch("modal_uv.cli._ensure_deployment_with_notice")
@@ -479,30 +483,84 @@ def test_verbose_flag_passed_to_deploy(
     assert mock_deploy.call_args.kwargs["verbose"] is True
 
 
-@patch("modal_uv.cli.subprocess")
-def test_shell_calls_modal_shell(mock_subprocess: MagicMock, tmp_path: Path) -> None:
+@patch("modal_uv.cli._ensure_deployment_with_notice")
+@patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
+@patch("modal_uv.cli.send_request")
+@patch("modal_uv.cli.ensure_daemon")
+@patch("modal_uv.cli.build_manifest")
+def test_exec_prints_spawned_execution_id_and_sends_exec_mode(
+    mock_manifest: MagicMock,
+    mock_ensure: MagicMock,
+    mock_send: MagicMock,
+    mock_fp: MagicMock,
+    mock_deploy: MagicMock,
+    tmp_path: Path,
+) -> None:
     yaml_path = _write_yaml(
         tmp_path,
         """\
         app_name: "test-app"
-        gpu: "T4"
         volumes:
           - name: "test-volume"
             mount_path: "/mnt/volume"
         """,
     )
 
-    mock_subprocess.run.return_value.returncode = 0
+    mock_manifest.return_value = [FileState(path="src/app.py", size=11, mtime_ns=100)]
+    mock_ensure.return_value = MagicMock()
+    mock_send.side_effect = [
+        {"status": "ok", "result": []},
+        {"status": "ok", "execution_id": "fc-exec"},
+    ]
 
-    result = runner.invoke(app, ["shell", "--config", str(yaml_path)])
+    result = runner.invoke(app, ["exec", "--config", str(yaml_path), "--", "nvidia-smi"])
 
     assert result.exit_code == 0
-    mock_subprocess.run.assert_called_once()
+    assert "Execution ID: fc-exec" in result.stdout
+    assert "Tail logs: modal-uv logs fc-exec" in result.stdout
+    assert "Abort: modal-uv abort fc-exec" in result.stdout
+    spawn_payload = mock_send.call_args_list[1].args[2]
+    assert spawn_payload["mode"] == "exec"
+    assert spawn_payload["args"] == ["nvidia-smi"]
 
 
-def test_shell_config_error_exits_nonzero(tmp_path: Path) -> None:
-    result = runner.invoke(app, ["shell", "--config", str(tmp_path / "missing.yaml")])
-    assert result.exit_code == 1
+@patch("modal_uv.cli._ensure_deployment_with_notice")
+@patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
+@patch("modal_uv.cli.send_request")
+@patch("modal_uv.cli.ensure_daemon")
+@patch("modal_uv.cli.build_manifest")
+def test_exec_shell_joins_multiple_tokens(
+    mock_manifest: MagicMock,
+    mock_ensure: MagicMock,
+    mock_send: MagicMock,
+    mock_fp: MagicMock,
+    mock_deploy: MagicMock,
+    tmp_path: Path,
+) -> None:
+    yaml_path = _write_yaml(tmp_path, 'app_name: "test-app"\n')
+    mock_manifest.return_value = []
+    mock_ensure.return_value = MagicMock()
+    mock_send.side_effect = [
+        {"status": "ok", "result": []},
+        {"status": "ok", "execution_id": "fc-join"},
+    ]
+
+    result = runner.invoke(
+        app, ["exec", "--config", str(yaml_path), "--", "ls", "-la", "&&", "pwd"]
+    )
+
+    assert result.exit_code == 0
+    spawn_payload = mock_send.call_args_list[1].args[2]
+    assert spawn_payload["args"] == [shell_join(["ls", "-la", "&&", "pwd"])]
+
+
+def test_exec_requires_command(tmp_path: Path) -> None:
+    yaml_path = _write_yaml(tmp_path, 'app_name: "test-app"\n')
+
+    result = runner.invoke(app, ["exec", "--config", str(yaml_path)])
+
+    assert result.exit_code != 0
+    assert "exec command required" in result.stderr
 
 
 @patch("modal_uv.cli.subprocess")
@@ -861,6 +919,7 @@ def test_init_creates_default_config_when_missing(
     assert tmp_path.name in content
     assert "runtime:" in content
     assert "scaledown_window_seconds: 300" in content
+    assert "exec:" not in content
     assert (tmp_path / ".modal-uv").is_dir()
     assert ".modal-uv/" in (tmp_path / ".gitignore").read_text(encoding="utf-8")
 

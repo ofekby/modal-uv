@@ -53,10 +53,15 @@ app_name: "my-project"
 gpu: "T4"
 work_dir: "/tmp/work"
 
-volume:
-  name: "modal-uv-cache"
-  mount_path: "/mnt/volume"
-  commit_interval_seconds: 30
+volumes:
+  - name: "modal-uv-cache"
+    mount_path: "/mnt/volume"
+    commit_interval_seconds: 30
+
+env: {}
+
+runtime:
+  scaledown_window_seconds: 300
 
 image:
   python_version: "3.12"
@@ -83,9 +88,13 @@ Fields:
 - `app_name`: Modal app name (required)
 - `gpu`: GPU type, such as `T4`, `A10G`, `A100`, `H100`, or `L4`
 - `work_dir`: Working directory inside the Modal container (default: `/root/work`)
-- `volume.name`: Modal volume name (required)
-- `volume.mount_path`: Mount path in the container (default: `/root/.cache`)
-- `volume.commit_interval_seconds`: Periodic Modal Volume commit interval while a command runs (default: `30`)
+- `volumes`: Modal volumes to mount in the container; may be empty or omitted
+- `volumes[].name`: Modal volume name
+- `volumes[].mount_path`: Mount path in the container (default: `/root/.cache`)
+- `volumes[].commit_interval_seconds`: Periodic Modal Volume commit interval while a command runs (default: `30`)
+- `env`: Extra container environment variables merged over modal-uv defaults
+- `runtime.scaledown_window_seconds`: Modal worker scaledown window (default: `300`)
+- `runtime.exec`: Optional shell executable for `modal-uv exec`; if omitted, the remote Worker uses `$SHELL`, then `/bin/sh`
 - `image.python_version`: Python version (default: `3.12`)
 - `image.base_image`: Base Docker image (default: `python:3.12-slim`)
 - `sync.ignore`: gitignore-style patterns excluded from direct sync
@@ -105,7 +114,7 @@ Examples of generated files:
 
 ## Sync And Deployment
 
-`modal-uv run` scans local files, applies built-in ignores plus `sync.ignore`, asks the warm Modal container which files are missing or stale, uploads only those files, spawns the execution, prints the Modal function call ID, and returns immediately.
+`modal-uv run` and `modal-uv exec` scan local files, apply built-in ignores plus `sync.ignore`, ask the warm Modal container which files are missing or stale, upload only those files, spawn the execution, print the Modal function call ID, and return immediately.
 
 The detached daemon lazily ensures the Modal app is deployed before running work. It generates `.modal-uv/deployment.py` and redeploys when the deployment fingerprint changes. The fingerprint includes the deployment template, Modal-relevant config values, and the repo `pyproject.toml` SHA256 when present.
 
@@ -132,10 +141,17 @@ modal-uv logs fc-...
 modal-uv abort fc-...
 ```
 
-Open an interactive shell on Modal:
+Run shell-style commands in the synced Modal work directory:
 
 ```bash
-modal-uv shell
+modal-uv exec -- nvidia-smi
+modal-uv exec -- 'ls -la && pwd'
+```
+
+Open Modal's native interactive shell through the passthrough command:
+
+```bash
+modal-uv modal -- shell
 ```
 
 Show Modal app status:
