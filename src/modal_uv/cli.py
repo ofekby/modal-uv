@@ -7,7 +7,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 
@@ -205,16 +205,18 @@ def status(
             raise SystemExit(1)
 
         apps = json.loads(result.stdout)
-        matching = [a for a in apps if a.get("Description") == config.app_name]
+        matching = [
+            a for a in apps if _json_value(a, "Description", "description") == config.app_name
+        ]
 
         if not matching:
             typer.echo(f"No app found with name: {config.app_name}")
             raise SystemExit(1)
 
         for a in matching:
-            typer.echo(f"App: {a['Description']}")
-            typer.echo(f"  Status: {a.get('State', 'unknown')}")
-            typer.echo(f"  ID: {a.get('App ID', 'unknown')}")
+            typer.echo(f"App: {_json_value(a, 'Description', 'description')}")
+            typer.echo(f"  Status: {_json_value(a, 'State', 'state', default='unknown')}")
+            typer.echo(f"  ID: {_json_value(a, 'App ID', 'app_id', default='unknown')}")
 
         raise SystemExit(0)
     except json.JSONDecodeError:
@@ -376,10 +378,18 @@ def _check_app(app_name: str) -> tuple[bool, str]:
     except json.JSONDecodeError:
         return False, "unable to parse app list"
     for a in apps:
-        if a.get("Description") == app_name:
-            state = a.get("State", "unknown")
+        if _json_value(a, "Description", "description") == app_name:
+            state = _json_value(a, "State", "state", default="unknown")
             return True, f"deployed ({state})"
     return False, "not deployed"
+
+
+def _json_value(item: dict[str, Any], *keys: str, default: Any = None) -> Any:
+    """Return a value from Modal JSON across CLI key-casing variants."""
+    for key in keys:
+        if key in item:
+            return item[key]
+    return default
 
 
 @app.command()
@@ -634,7 +644,14 @@ def _kill_app_containers(app_name: str) -> None:
         if app_result.returncode != 0:
             return
         apps = json.loads(app_result.stdout)
-        app_id = next((a.get("App ID") for a in apps if a.get("Description") == app_name), None)
+        app_id = next(
+            (
+                _json_value(a, "App ID", "app_id")
+                for a in apps
+                if _json_value(a, "Description", "description") == app_name
+            ),
+            None,
+        )
         if app_id is None:
             return
 
@@ -648,7 +665,7 @@ def _kill_app_containers(app_name: str) -> None:
             return
         containers = json.loads(ctr_result.stdout)
         for ctr in containers:
-            ctr_id = ctr.get("Container ID")
+            ctr_id = _json_value(ctr, "Container ID", "container_id")
             if ctr_id:
                 subprocess.run(
                     [sys.executable, "-m", "modal", "container", "stop", "-y", ctr_id],

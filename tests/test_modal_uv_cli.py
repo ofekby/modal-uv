@@ -401,6 +401,32 @@ def test_kill_containers_not_called_on_first_deploy(
     mock_kill.assert_not_called()
 
 
+@patch("modal_uv.cli.subprocess")
+def test_kill_app_containers_accepts_lowercase_modal_json_keys(
+    mock_subprocess: MagicMock,
+) -> None:
+    from modal_uv.cli import _kill_app_containers
+
+    mock_subprocess.run.side_effect = [
+        MagicMock(
+            returncode=0,
+            stdout=json.dumps(
+                [{"description": "test-app", "state": "deployed", "app_id": "app-123"}]
+            ),
+        ),
+        MagicMock(
+            returncode=0,
+            stdout=json.dumps([{"container_id": "ct-123", "app_id": "app-123"}]),
+        ),
+        MagicMock(returncode=0, stdout="", stderr=""),
+    ]
+
+    _kill_app_containers("test-app")
+
+    stop_call = mock_subprocess.run.call_args_list[2]
+    assert stop_call.args[0][-1] == "ct-123"
+
+
 @patch("modal_uv.cli.deploy_generated_artifact")
 @patch("modal_uv.cli.query_deployed_fingerprint")
 def test_no_deploy_when_fingerprint_matches(
@@ -501,6 +527,33 @@ def test_status_shows_app(mock_subprocess: MagicMock, tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert "test-app" in result.stdout
+
+
+@patch("modal_uv.cli.subprocess")
+def test_status_accepts_lowercase_modal_json_keys(
+    mock_subprocess: MagicMock, tmp_path: Path
+) -> None:
+    yaml_path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
+        """,
+    )
+
+    mock_subprocess.run.return_value.returncode = 0
+    mock_subprocess.run.return_value.stdout = json.dumps(
+        [{"description": "test-app", "state": "deployed", "app_id": "app-123"}]
+    )
+
+    result = runner.invoke(app, ["status", "--config", str(yaml_path)])
+
+    assert result.exit_code == 0
+    assert "test-app" in result.stdout
+    assert "deployed" in result.stdout
+    assert "app-123" in result.stdout
 
 
 @patch("modal_uv.cli.subprocess")
@@ -931,6 +984,53 @@ def test_doctor_with_config_checks_auth_volume_app(
     commands = [call.args[0] for call in mock_subprocess.run.call_args_list]
     assert any(command[-2:] == ["profile", "current"] for command in commands)
     assert any(command[-3:] == ["volume", "ls", "test-volume"] for command in commands)
+
+
+@patch("modal_uv.cli.subprocess")
+def test_doctor_accepts_lowercase_modal_app_json_keys(
+    mock_subprocess: MagicMock, tmp_path: Path
+) -> None:
+    yaml_path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
+        """,
+    )
+
+    def fake_run(cmd, **kwargs):
+        if "profile" in cmd and "current" in cmd:
+            return MagicMock(returncode=0, stdout="authenticated as user@example.com\n")
+        if "volume" in cmd and "ls" in cmd:
+            return MagicMock(returncode=0, stdout="test-volume\n")
+        if "app" in cmd and "list" in cmd:
+            return MagicMock(
+                returncode=0,
+                stdout=json.dumps(
+                    [{"description": "test-app", "state": "deployed", "app_id": "app-123"}]
+                ),
+            )
+        return MagicMock(returncode=1, stdout="", stderr="unknown")
+
+    mock_subprocess.run.side_effect = fake_run
+
+    with (
+        patch("modal_uv.cli.load_config") as mock_load,
+        patch("modal_uv.cli.ensure_repo_state"),
+    ):
+        mock_config = MagicMock()
+        mock_config.app_name = "test-app"
+        mock_vol = MagicMock()
+        mock_vol.name = "test-volume"
+        mock_config.volumes = [mock_vol]
+        mock_load.return_value = mock_config
+
+        result = runner.invoke(app, ["doctor", "--config", str(yaml_path)])
+
+    assert result.exit_code == 0
+    assert "App (test-app): deployed (deployed)" in result.stdout
 
 
 @patch("modal_uv.cli.subprocess")
