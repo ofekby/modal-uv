@@ -511,6 +511,9 @@ volumes:
 
 env: {{}}
 
+runtime:
+  scaledown_window_seconds: 300
+
 image:
   python_version: "3.12"
   base_image: "python:3.12-slim"

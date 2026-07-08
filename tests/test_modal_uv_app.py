@@ -18,6 +18,7 @@ def _make_config() -> dict[str, Any]:
         "env": {},
         "work_dir": "/tmp/work",
         "image_base": "python:3.12-slim",
+        "scaledown_window_seconds": 120,
         "fingerprint": "abc123",
     }
 
@@ -87,6 +88,16 @@ def test_create_app_limits_worker_to_one_container(mock_modal: MagicMock) -> Non
 
     cls_kwargs = mock_app.cls.call_args.kwargs
     assert cls_kwargs["max_containers"] == 1
+
+
+@patch("modal_uv.app.modal")
+def test_create_app_uses_scaledown_window(mock_modal: MagicMock) -> None:
+    mock_app = _setup_mocks(mock_modal)
+
+    create_app(**_make_config())
+
+    cls_kwargs = mock_app.cls.call_args.kwargs
+    assert cls_kwargs["scaledown_window"] == 120
 
 
 @patch("modal_uv.app.modal")

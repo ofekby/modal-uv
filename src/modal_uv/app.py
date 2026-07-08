@@ -32,6 +32,7 @@ def create_app(
     gpu: str | None,
     volumes: list[dict[str, Any]],
     env: dict[str, str],
+    scaledown_window_seconds: int,
     work_dir: str,
     image_base: str,
     fingerprint: str,
@@ -65,7 +66,7 @@ def create_app(
     ]
 
     cls_options: dict[str, Any] = {
-        "scaledown_window": 300,
+        "scaledown_window": scaledown_window_seconds,
         "timeout": 7200,
         "max_containers": 1,
         "image": image,

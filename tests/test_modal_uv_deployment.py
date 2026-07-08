@@ -40,6 +40,8 @@ def _config(tmp_path: Path):
             commit_interval_seconds: 45
         env:
           MY_KEY: "myval"
+        runtime:
+          scaledown_window_seconds: 120
         image:
           python_version: "3.12"
           base_image: "python:3.12-slim"
@@ -66,6 +68,7 @@ def test_deployment_parameters_exclude_sync_ignore(tmp_path: Path) -> None:
             }
         ],
         "env": {"MY_KEY": "myval"},
+        "runtime": {"scaledown_window_seconds": 120},
         "image": {"python_version": "3.12", "base_image": "python:3.12-slim"},
     }
 
@@ -184,6 +187,17 @@ def test_render_deployment_embeds_volume_commit_interval(tmp_path: Path) -> None
 
     assert "commit_interval_seconds" in rendered
     assert "'test-volume'" in rendered
+
+
+def test_render_deployment_embeds_scaledown_window(tmp_path: Path) -> None:
+    config = _config(tmp_path)
+    params = deployment_parameters(config)
+    template = load_deployment_template()
+    fingerprint = deployment_fingerprint(template, params, tmp_path)
+
+    rendered = render_deployment(template, params, fingerprint)
+
+    assert "scaledown_window_seconds=120" in rendered
 
 
 def test_write_deployment_artifact_uses_modal_uv_state_dir(tmp_path: Path) -> None:

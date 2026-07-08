@@ -123,6 +123,9 @@ def test_full_yaml(tmp_path: Path) -> None:
           - name: "my-volume"
             mount_path: "/custom/cache"
 
+        runtime:
+          scaledown_window_seconds: 120
+
         image:
           python_version: "3.11"
           base_image: "python:3.11-slim"
@@ -139,6 +142,7 @@ def test_full_yaml(tmp_path: Path) -> None:
     assert config.work_dir == Path("/custom/work")
     assert config.volumes[0].name == "my-volume"
     assert config.volumes[0].mount_path == Path("/custom/cache")
+    assert config.runtime.scaledown_window_seconds == 120
     assert config.image.python_version == "3.11"
     assert config.image.base_image == "python:3.11-slim"
     assert config.sync.ignore == ("data/**", "*.ckpt")
@@ -210,6 +214,7 @@ def test_defaults_applied(tmp_path: Path) -> None:
     assert config.image.base_image == "python:3.12-slim"
     assert config.sync.ignore == ()
     assert config.volumes[0].commit_interval_seconds == 30
+    assert config.runtime.scaledown_window_seconds == 300
 
 
 def test_commit_interval_seconds_is_configurable(tmp_path: Path) -> None:
@@ -238,6 +243,20 @@ def test_commit_interval_seconds_must_be_positive(tmp_path: Path) -> None:
     )
 
     with pytest.raises(ConfigError, match="commit_interval_seconds"):
+        load_config(path)
+
+
+def test_scaledown_window_seconds_must_be_positive(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        runtime:
+          scaledown_window_seconds: 0
+        """,
+    )
+
+    with pytest.raises(ConfigError, match="scaledown_window_seconds"):
         load_config(path)
 
 

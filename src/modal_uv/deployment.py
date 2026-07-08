@@ -26,6 +26,7 @@ app = create_app(
     gpu={gpu!r},
     volumes={volumes!r},
     env={env!r},
+    scaledown_window_seconds={scaledown_window_seconds!r},
     work_dir={work_dir!r},
     image_base={image_base!r},
     fingerprint={fingerprint!r},
@@ -56,6 +57,9 @@ def deployment_parameters(config: ModalUVConfig) -> dict[str, Any]:
             for v in config.volumes
         ],
         "env": dict(config.env),
+        "runtime": {
+            "scaledown_window_seconds": config.runtime.scaledown_window_seconds,
+        },
         "image": {
             "python_version": config.image.python_version,
             "base_image": config.image.base_image,
@@ -129,12 +133,14 @@ def load_deployment_template() -> str:
 def render_deployment(template_text: str, parameters: dict[str, Any], fingerprint: str) -> str:
     """Render a generated deployment.py artifact."""
     image = parameters["image"]
+    runtime = parameters["runtime"]
     return template_text.format(
         fingerprint=fingerprint,
         app_name=parameters["app_name"],
         gpu=parameters["gpu"],
         volumes=parameters["volumes"],
         env=parameters["env"],
+        scaledown_window_seconds=runtime["scaledown_window_seconds"],
         work_dir=parameters["work_dir"],
         image_base=image["base_image"],
     )

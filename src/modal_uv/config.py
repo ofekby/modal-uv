@@ -47,6 +47,13 @@ class SyncConfig:
 
 
 @dataclass(frozen=True)
+class RuntimeConfig:
+    """Modal runtime behavior configuration."""
+
+    scaledown_window_seconds: int
+
+
+@dataclass(frozen=True)
 class ModalUVConfig:
     """Complete modal-uv configuration."""
 
@@ -55,6 +62,7 @@ class ModalUVConfig:
     work_dir: Path
     volumes: tuple[VolumeConfig, ...]
     env: tuple[tuple[str, str], ...]
+    runtime: RuntimeConfig
     image: ImageConfig
     sync: SyncConfig
 
@@ -82,6 +90,7 @@ _DEFAULT_WORK_DIR = Path("/root/work")
 _DEFAULT_PYTHON_VERSION = "3.12"
 _DEFAULT_BASE_IMAGE = "python:3.12-slim"
 _DEFAULT_COMMIT_INTERVAL_SECONDS = 30
+_DEFAULT_SCALEDOWN_WINDOW_SECONDS = 300
 
 
 class _RawVolume(BaseModel):
@@ -112,6 +121,19 @@ class _RawSync(BaseModel):
     ignore: list[str] = Field(default_factory=list)
 
 
+class _RawRuntime(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    scaledown_window_seconds: int = _DEFAULT_SCALEDOWN_WINDOW_SECONDS
+
+    @field_validator("scaledown_window_seconds")
+    @classmethod
+    def validate_scaledown_window_seconds(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("scaledown_window_seconds must be greater than 0")
+        return value
+
+
 class _RawSettings(BaseSettings):
     model_config = SettingsConfigDict(
         extra="ignore",
@@ -123,6 +145,7 @@ class _RawSettings(BaseSettings):
     work_dir: Path = _DEFAULT_WORK_DIR
     volumes: list[_RawVolume] = Field(default_factory=list)
     env: dict[str, str] = Field(default_factory=dict)
+    runtime: _RawRuntime = Field(default_factory=_RawRuntime)
     image: _RawImage = Field(default_factory=_RawImage)
     sync: _RawSync = Field(default_factory=_RawSync)
 
@@ -213,6 +236,9 @@ def load_config(config_path: Path | None = None) -> ModalUVConfig:
         work_dir=settings.work_dir,
         volumes=tuple(volumes),
         env=tuple(settings.env.items()),
+        runtime=RuntimeConfig(
+            scaledown_window_seconds=settings.runtime.scaledown_window_seconds,
+        ),
         image=ImageConfig(
             python_version=settings.image.python_version,
             base_image=settings.image.base_image,

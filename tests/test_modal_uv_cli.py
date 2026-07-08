@@ -859,6 +859,8 @@ def test_init_creates_default_config_when_missing(
     content = config_file.read_text(encoding="utf-8")
     assert "app_name:" in content
     assert tmp_path.name in content
+    assert "runtime:" in content
+    assert "scaledown_window_seconds: 300" in content
     assert (tmp_path / ".modal-uv").is_dir()
     assert ".modal-uv/" in (tmp_path / ".gitignore").read_text(encoding="utf-8")
 

@@ -9,6 +9,9 @@ volumes:
 
 env: {}
 
+runtime:
+  scaledown_window_seconds: 300
+
 image:
   python_version: "3.13"
   base_image: "python:3.13-slim"
