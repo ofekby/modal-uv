@@ -2,14 +2,16 @@ app_name: "example-repo"
 gpu: "T4"
 work_dir: "/tmp/work"
 
-volume:
-  name: "modal-uv-cache"
-  mount_path: "/mnt/volume"
-  commit_interval_seconds: 30
+volumes:
+  - name: "modal-uv-cache"
+    mount_path: "/mnt/volume"
+    commit_interval_seconds: 30
+
+env: {}
 
 image:
-  python_version: "3.12"
-  base_image: "python:3.12-slim"
+  python_version: "3.13"
+  base_image: "python:3.13-slim"
 
 sync:
   ignore: []

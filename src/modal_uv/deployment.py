@@ -24,9 +24,8 @@ from modal_uv.app import create_app
 app = create_app(
     app_name={app_name!r},
     gpu={gpu!r},
-    volume_name={volume_name!r},
-    volume_mount_path={volume_mount_path!r},
-    commit_interval_seconds={commit_interval_seconds!r},
+    volumes={volumes!r},
+    env={env!r},
     work_dir={work_dir!r},
     image_base={image_base!r},
     fingerprint={fingerprint!r},
@@ -48,11 +47,15 @@ def deployment_parameters(config: ModalUVConfig) -> dict[str, Any]:
         "app_name": config.app_name,
         "gpu": config.gpu,
         "work_dir": config.work_dir.as_posix(),
-        "volume": {
-            "name": config.volume.name,
-            "mount_path": config.volume.mount_path.as_posix(),
-            "commit_interval_seconds": config.volume.commit_interval_seconds,
-        },
+        "volumes": [
+            {
+                "name": v.name,
+                "mount_path": v.mount_path.as_posix(),
+                "commit_interval_seconds": v.commit_interval_seconds,
+            }
+            for v in config.volumes
+        ],
+        "env": dict(config.env),
         "image": {
             "python_version": config.image.python_version,
             "base_image": config.image.base_image,
@@ -125,15 +128,13 @@ def load_deployment_template() -> str:
 
 def render_deployment(template_text: str, parameters: dict[str, Any], fingerprint: str) -> str:
     """Render a generated deployment.py artifact."""
-    volume = parameters["volume"]
     image = parameters["image"]
     return template_text.format(
         fingerprint=fingerprint,
         app_name=parameters["app_name"],
         gpu=parameters["gpu"],
-        volume_name=volume["name"],
-        volume_mount_path=volume["mount_path"],
-        commit_interval_seconds=volume["commit_interval_seconds"],
+        volumes=parameters["volumes"],
+        env=parameters["env"],
         work_dir=parameters["work_dir"],
         image_base=image["base_image"],
     )

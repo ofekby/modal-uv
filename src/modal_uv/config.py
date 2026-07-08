@@ -53,7 +53,8 @@ class ModalUVConfig:
     app_name: str
     gpu: str | None
     work_dir: Path
-    volume: VolumeConfig
+    volumes: tuple[VolumeConfig, ...]
+    env: tuple[tuple[str, str], ...]
     image: ImageConfig
     sync: SyncConfig
 
@@ -120,7 +121,8 @@ class _RawSettings(BaseSettings):
     app_name: str = ""
     gpu: str | None = None
     work_dir: Path = _DEFAULT_WORK_DIR
-    volume: _RawVolume = Field(default_factory=_RawVolume)
+    volumes: list[_RawVolume] = Field(default_factory=list)
+    env: dict[str, str] = Field(default_factory=dict)
     image: _RawImage = Field(default_factory=_RawImage)
     sync: _RawSync = Field(default_factory=_RawSync)
 
@@ -190,18 +192,27 @@ def load_config(config_path: Path | None = None) -> ModalUVConfig:
     except Exception as exc:
         raise ConfigError(f"failed to load config from {_yaml_path}: {exc}") from exc
 
-    if not settings.volume.name.strip():
-        raise ConfigError("volume.name is required")
+    if not settings.app_name.strip():
+        raise ConfigError("app_name is required")
+
+    volumes: list[VolumeConfig] = []
+    for raw_vol in settings.volumes:
+        if not raw_vol.name.strip():
+            raise ConfigError("each volume must have a name")
+        volumes.append(
+            VolumeConfig(
+                name=raw_vol.name.strip(),
+                mount_path=raw_vol.mount_path,
+                commit_interval_seconds=raw_vol.commit_interval_seconds,
+            )
+        )
 
     return ModalUVConfig(
         app_name=settings.app_name,
         gpu=settings.gpu,
         work_dir=settings.work_dir,
-        volume=VolumeConfig(
-            name=settings.volume.name.strip(),
-            mount_path=settings.volume.mount_path,
-            commit_interval_seconds=settings.volume.commit_interval_seconds,
-        ),
+        volumes=tuple(volumes),
+        env=tuple(settings.env.items()),
         image=ImageConfig(
             python_version=settings.image.python_version,
             base_image=settings.image.base_image,

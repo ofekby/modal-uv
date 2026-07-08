@@ -52,8 +52,9 @@ def test_run_prints_spawned_execution_id(
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     source = tmp_path / "src" / "app.py"
@@ -105,8 +106,9 @@ def test_run_discovers_repo_root_from_nested_cwd(
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     nested = tmp_path / "src" / "package"
@@ -145,8 +147,9 @@ def test_run_passes_sync_ignore_to_manifest(
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         sync:
           ignore:
             - "data/**"
@@ -181,8 +184,9 @@ def test_run_fails_before_spawn_when_daemon_returns_error(
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
 
@@ -223,8 +227,9 @@ def test_run_restarts_daemon_on_fingerprint_mismatch(
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     mock_manifest.return_value = [FileState(path="src/app.py", size=11, mtime_ns=100)]
@@ -265,8 +270,9 @@ def test_run_fails_when_restart_still_returns_restart_needed(
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     mock_manifest.return_value = [FileState(path="src/app.py", size=11, mtime_ns=100)]
@@ -297,8 +303,9 @@ def test_deploy_notice_printed_when_app_missing(
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     config = load_config(tmp_path / "modal-uv.yaml")
@@ -322,8 +329,9 @@ def test_deploy_notice_printed_when_app_broken(
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     config = load_config(tmp_path / "modal-uv.yaml")
@@ -333,11 +341,16 @@ def test_deploy_notice_printed_when_app_broken(
     mock_deploy.assert_called_once()
 
 
+@patch("modal_uv.cli._kill_app_containers")
 @patch("modal_uv.cli._wait_for_deployment_ready")
 @patch("modal_uv.cli.deploy_generated_artifact")
 @patch("modal_uv.cli.query_deployed_fingerprint", return_value="stale-fp")
 def test_redeploy_notice_printed_when_fingerprint_mismatches(
-    mock_query: MagicMock, mock_deploy: MagicMock, mock_wait: MagicMock, tmp_path: Path
+    mock_query: MagicMock,
+    mock_deploy: MagicMock,
+    mock_wait: MagicMock,
+    mock_kill: MagicMock,
+    tmp_path: Path,
 ) -> None:
     from modal_uv.cli import _ensure_deployment_with_notice
     from modal_uv.config import load_config
@@ -346,8 +359,9 @@ def test_redeploy_notice_printed_when_fingerprint_mismatches(
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     config = load_config(tmp_path / "modal-uv.yaml")
@@ -355,6 +369,36 @@ def test_redeploy_notice_printed_when_fingerprint_mismatches(
     _ensure_deployment_with_notice(config, tmp_path)
 
     mock_deploy.assert_called_once()
+    mock_kill.assert_called_once_with("test-app")
+
+
+@patch("modal_uv.cli._wait_for_deployment_ready")
+@patch("modal_uv.cli.deploy_generated_artifact")
+@patch("modal_uv.cli.query_deployed_fingerprint", side_effect=DeploymentMissing("no app"))
+def test_kill_containers_not_called_on_first_deploy(
+    mock_query: MagicMock,
+    mock_deploy: MagicMock,
+    mock_wait: MagicMock,
+    tmp_path: Path,
+) -> None:
+    from modal_uv.cli import _ensure_deployment_with_notice
+    from modal_uv.config import load_config
+
+    _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
+        """,
+    )
+    config = load_config(tmp_path / "modal-uv.yaml")
+
+    with patch("modal_uv.cli._kill_app_containers") as mock_kill:
+        _ensure_deployment_with_notice(config, tmp_path)
+
+    mock_kill.assert_not_called()
 
 
 @patch("modal_uv.cli.deploy_generated_artifact")
@@ -369,8 +413,9 @@ def test_no_deploy_when_fingerprint_matches(
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     config = load_config(tmp_path / "modal-uv.yaml")
@@ -395,8 +440,9 @@ def test_verbose_flag_passed_to_deploy(
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     config = load_config(tmp_path / "modal-uv.yaml")
@@ -414,8 +460,9 @@ def test_shell_calls_modal_shell(mock_subprocess: MagicMock, tmp_path: Path) -> 
         """\
         app_name: "test-app"
         gpu: "T4"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
 
@@ -439,8 +486,9 @@ def test_status_shows_app(mock_subprocess: MagicMock, tmp_path: Path) -> None:
         """\
         app_name: "test-app"
         gpu: "T4"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
 
@@ -462,8 +510,9 @@ def test_status_no_app_found(mock_subprocess: MagicMock, tmp_path: Path) -> None
         """\
         app_name: "test-app"
         gpu: "T4"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
 
@@ -492,8 +541,9 @@ def test_logs_tails_function_call_logs(
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     mock_process = MagicMock()
@@ -529,8 +579,9 @@ def test_abort_cancels_function_call(mock_fc_class: MagicMock, tmp_path: Path) -
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     function_call = MagicMock()
@@ -550,8 +601,9 @@ def test_daemon_stop_reports_stopped(mock_stop: MagicMock, tmp_path: Path) -> No
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
 
@@ -568,8 +620,9 @@ def test_daemon_status_shows_info(mock_status: MagicMock, tmp_path: Path) -> Non
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
 
@@ -761,7 +814,9 @@ def test_init_preserves_existing_config(tmp_path: Path, monkeypatch: pytest.Monk
     monkeypatch.chdir(tmp_path)
     config_file = tmp_path / "modal-uv.yaml"
     config_file.write_text(
-        'app_name: "existing-app"\nvolume:\n  name: "existing-vol"\n', encoding="utf-8"
+        'app_name: "existing-app"\n'
+        'volumes:\n  - name: "existing-vol"\n    mount_path: "/mnt/volume"\n',
+        encoding="utf-8",
     )
 
     result = runner.invoke(app, ["init"])
@@ -833,8 +888,9 @@ def test_doctor_with_config_checks_auth_volume_app(
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
 
@@ -860,7 +916,9 @@ def test_doctor_with_config_checks_auth_volume_app(
     ):
         mock_config = MagicMock()
         mock_config.app_name = "test-app"
-        mock_config.volume.name = "test-volume"
+        mock_vol = MagicMock()
+        mock_vol.name = "test-volume"
+        mock_config.volumes = [mock_vol]
         mock_load.return_value = mock_config
 
         result = runner.invoke(app, ["doctor", "--config", str(yaml_path)])
@@ -881,8 +939,9 @@ def test_doctor_reports_auth_failure(mock_subprocess: MagicMock, tmp_path: Path)
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
 
@@ -899,7 +958,9 @@ def test_doctor_reports_auth_failure(mock_subprocess: MagicMock, tmp_path: Path)
     ):
         mock_config = MagicMock()
         mock_config.app_name = "test-app"
-        mock_config.volume.name = "test-volume"
+        mock_vol = MagicMock()
+        mock_vol.name = "test-volume"
+        mock_config.volumes = [mock_vol]
         mock_load.return_value = mock_config
 
         result = runner.invoke(app, ["doctor", "--config", str(yaml_path)])

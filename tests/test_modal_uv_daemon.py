@@ -35,8 +35,9 @@ def _write_yaml(tmp_path: Path) -> Path:
         dedent(
             """\
             app_name: "test-app"
-            volume:
-              name: "test-volume"
+            volumes:
+              - name: "test-volume"
+                mount_path: "/mnt/volume"
             """
         ),
         encoding="utf-8",

@@ -23,14 +23,15 @@ def test_minimal_valid_yaml(tmp_path: Path) -> None:
         """\
         app_name: "test-app"
         gpu: "T4"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     config = load_config(path)
     assert config.app_name == "test-app"
     assert config.gpu == "T4"
-    assert config.volume.name == "test-volume"
+    assert config.volumes[0].name == "test-volume"
 
 
 def test_resolve_project_walks_up_from_nested_directory(tmp_path: Path) -> None:
@@ -38,8 +39,9 @@ def test_resolve_project_walks_up_from_nested_directory(tmp_path: Path) -> None:
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     nested = tmp_path / "src" / "package"
@@ -56,8 +58,9 @@ def test_resolve_project_uses_config_parent_when_explicit(tmp_path: Path) -> Non
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     unrelated = tmp_path / "unrelated"
@@ -116,9 +119,9 @@ def test_full_yaml(tmp_path: Path) -> None:
         gpu: "A100"
         work_dir: "/custom/work"
 
-        volume:
-          name: "my-volume"
-          mount_path: "/custom/cache"
+        volumes:
+          - name: "my-volume"
+            mount_path: "/custom/cache"
 
         image:
           python_version: "3.11"
@@ -134,8 +137,8 @@ def test_full_yaml(tmp_path: Path) -> None:
     assert config.app_name == "my-app"
     assert config.gpu == "A100"
     assert config.work_dir == Path("/custom/work")
-    assert config.volume.name == "my-volume"
-    assert config.volume.mount_path == Path("/custom/cache")
+    assert config.volumes[0].name == "my-volume"
+    assert config.volumes[0].mount_path == Path("/custom/cache")
     assert config.image.python_version == "3.11"
     assert config.image.base_image == "python:3.11-slim"
     assert config.sync.ignore == ("data/**", "*.ckpt")
@@ -153,8 +156,9 @@ def test_invalid_gpu_fails(tmp_path: Path) -> None:
         """\
         app_name: "test-app"
         gpu: "INVALID"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     with pytest.raises(ConfigError, match="gpu"):
@@ -166,8 +170,9 @@ def test_missing_app_name_fails(tmp_path: Path) -> None:
         tmp_path,
         """\
         gpu: "T4"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     with pytest.raises(ConfigError, match="app_name"):
@@ -180,11 +185,11 @@ def test_missing_volume_name_fails(tmp_path: Path) -> None:
         """\
         app_name: "test-app"
         gpu: "T4"
-        volume:
-          mount_path: "/custom/cache"
+        volumes:
+          - mount_path: "/custom/cache"
         """,
     )
-    with pytest.raises(ConfigError, match="volume.name"):
+    with pytest.raises(ConfigError, match="each volume must have a name"):
         load_config(path)
 
 
@@ -193,18 +198,18 @@ def test_defaults_applied(tmp_path: Path) -> None:
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
         """,
     )
     config = load_config(path)
     assert config.gpu is None
     assert config.work_dir == Path("/root/work")
-    assert config.volume.mount_path == Path("/root/.cache")
+    assert config.volumes[0].mount_path == Path("/root/.cache")
     assert config.image.python_version == "3.12"
     assert config.image.base_image == "python:3.12-slim"
     assert config.sync.ignore == ()
-    assert config.volume.commit_interval_seconds == 30
+    assert config.volumes[0].commit_interval_seconds == 30
 
 
 def test_commit_interval_seconds_is_configurable(tmp_path: Path) -> None:
@@ -212,13 +217,13 @@ def test_commit_interval_seconds_is_configurable(tmp_path: Path) -> None:
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
-          commit_interval_seconds: 60
+        volumes:
+          - name: "test-volume"
+            commit_interval_seconds: 60
         """,
     )
     config = load_config(path)
-    assert config.volume.commit_interval_seconds == 60
+    assert config.volumes[0].commit_interval_seconds == 60
 
 
 def test_commit_interval_seconds_must_be_positive(tmp_path: Path) -> None:
@@ -226,9 +231,9 @@ def test_commit_interval_seconds_must_be_positive(tmp_path: Path) -> None:
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
-          commit_interval_seconds: 0
+        volumes:
+          - name: "test-volume"
+            commit_interval_seconds: 0
         """,
     )
 
@@ -241,8 +246,9 @@ def test_preload_is_not_part_of_public_config(tmp_path: Path) -> None:
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     config = load_config(path)
@@ -255,8 +261,9 @@ def test_sync_ignore_trims_blank_entries(tmp_path: Path) -> None:
         tmp_path,
         """\
         app_name: "test-app"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         sync:
           ignore:
             - " data/** "
@@ -275,8 +282,9 @@ def test_env_does_not_override_yaml(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         """\
         app_name: "test-app"
         gpu: "T4"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     monkeypatch.setenv("MODAL_UV_GPU", "A100")
@@ -290,8 +298,9 @@ def test_a100_80gb_gpu_is_allowed(tmp_path: Path) -> None:
         """\
         app_name: "test-app"
         gpu: "a100-80gb"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     config = load_config(path)
@@ -304,8 +313,9 @@ def test_gpu_case_normalized(tmp_path: Path) -> None:
         """\
         app_name: "test-app"
         gpu: "a100"
-        volume:
-          name: "test-volume"
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
         """,
     )
     config = load_config(path)

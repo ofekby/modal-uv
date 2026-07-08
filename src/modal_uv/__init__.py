@@ -1,4 +1,4 @@
-"""Run uv commands on Modal.com with GPU and S3 volume mounts."""
+"""Run uv commands on Modal.com with GPU and persistent volumes."""
 
 from __future__ import annotations
 

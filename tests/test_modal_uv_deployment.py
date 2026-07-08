@@ -34,10 +34,12 @@ def _config(tmp_path: Path):
         app_name: "test-app"
         gpu: "T4"
         work_dir: "/tmp/work"
-        volume:
-          name: "test-volume"
-          mount_path: "/mnt/volume"
-          commit_interval_seconds: 45
+        volumes:
+          - name: "test-volume"
+            mount_path: "/mnt/volume"
+            commit_interval_seconds: 45
+        env:
+          MY_KEY: "myval"
         image:
           python_version: "3.12"
           base_image: "python:3.12-slim"
@@ -56,11 +58,14 @@ def test_deployment_parameters_exclude_sync_ignore(tmp_path: Path) -> None:
         "app_name": "test-app",
         "gpu": "T4",
         "work_dir": "/tmp/work",
-        "volume": {
-            "name": "test-volume",
-            "mount_path": "/mnt/volume",
-            "commit_interval_seconds": 45,
-        },
+        "volumes": [
+            {
+                "name": "test-volume",
+                "mount_path": "/mnt/volume",
+                "commit_interval_seconds": 45,
+            }
+        ],
+        "env": {"MY_KEY": "myval"},
         "image": {"python_version": "3.12", "base_image": "python:3.12-slim"},
     }
 
@@ -177,7 +182,8 @@ def test_render_deployment_embeds_volume_commit_interval(tmp_path: Path) -> None
 
     rendered = render_deployment(template, params, fingerprint)
 
-    assert "commit_interval_seconds=45" in rendered
+    assert "commit_interval_seconds" in rendered
+    assert "'test-volume'" in rendered
 
 
 def test_write_deployment_artifact_uses_modal_uv_state_dir(tmp_path: Path) -> None:

@@ -169,9 +169,9 @@ def shell(
         "-m",
         "modal",
         "shell",
-        "--volume",
-        f"{config.volume.name}:/root/.cache",
     ]
+    for vol in config.volumes:
+        cmd.extend(["--volume", vol.name])
     if config.gpu is not None:
         cmd[2:2] = ["--gpu", config.gpu]
 
@@ -309,8 +309,9 @@ def doctor(
     auth_ok, auth_info = _check_auth()
     typer.echo(f"Auth: {auth_info}")
 
-    volume_ok, volume_info = _check_volume(config.volume.name)
-    typer.echo(f"Volume ({config.volume.name}): {volume_info}")
+    for vol in config.volumes:
+        volume_ok, volume_info = _check_volume(vol.name)
+        typer.echo(f"Volume ({vol.name}): {volume_info}")
 
     app_ok, app_info = _check_app(config.app_name)
     typer.echo(f"App ({config.app_name}): {app_info}")
@@ -493,10 +494,12 @@ app_name: "{app_name}"
 gpu: "T4"
 work_dir: "/tmp/work"
 
-volume:
-  name: "modal-uv-cache"
-  mount_path: "/mnt/volume"
-  commit_interval_seconds: 30
+volumes:
+  - name: "modal-uv-cache"
+    mount_path: "/mnt/volume"
+    commit_interval_seconds: 30
+
+env: {{}}
 
 image:
   python_version: "3.12"
@@ -612,15 +615,60 @@ def _ensure_deployment_with_notice(
         typer.echo("[modal-uv] Deploying app to Modal...", err=True)
     else:
         typer.echo("[modal-uv] Redeploying app (deployment changed)...", err=True)
+        typer.echo("[modal-uv] Killing stale containers...", err=True)
+        _kill_app_containers(config.app_name)
 
     deploy_generated_artifact(deployment_path, verbose=verbose)
     _wait_for_deployment_ready(config.app_name, expected_fp)
 
 
+def _kill_app_containers(app_name: str) -> None:
+    """Stop all running containers for an app to flush stale versions."""
+    try:
+        app_result = subprocess.run(
+            [sys.executable, "-m", "modal", "app", "list", "--json"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        if app_result.returncode != 0:
+            return
+        apps = json.loads(app_result.stdout)
+        app_id = next((a.get("App ID") for a in apps if a.get("Description") == app_name), None)
+        if app_id is None:
+            return
+
+        ctr_result = subprocess.run(
+            [sys.executable, "-m", "modal", "container", "list", "--app-id", app_id, "--json"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        if ctr_result.returncode != 0:
+            return
+        containers = json.loads(ctr_result.stdout)
+        for ctr in containers:
+            ctr_id = ctr.get("Container ID")
+            if ctr_id:
+                subprocess.run(
+                    [sys.executable, "-m", "modal", "container", "stop", "-y", ctr_id],
+                    capture_output=True,
+                    timeout=15,
+                )
+    except Exception:
+        pass
+
+
 def _wait_for_deployment_ready(
-    app_name: str, expected_fp: str, max_retries: int = 6, interval: float = 10.0
+    app_name: str, expected_fp: str, max_retries: int = 36, interval: float = 10.0
 ) -> None:
-    """Poll the deployed fingerprint until it responds with the expected value."""
+    """Poll the deployed fingerprint until it responds with the expected value.
+
+    After a redeploy, Modal may keep old containers alive for up to
+    scaledown_window (300s). Queries during that window can hit stale
+    containers returning the old fingerprint. We poll until the new
+    container is consistently serving.
+    """
     typer.echo("[modal-uv] Waiting for deployment to become ready...", err=True)
     for attempt in range(1, max_retries + 1):
         try:
@@ -628,8 +676,21 @@ def _wait_for_deployment_ready(
             if remote_fp == expected_fp:
                 typer.echo(f"[modal-uv] Deployment ready (attempt {attempt}).", err=True)
                 return
-        except (DeploymentMissing, DeploymentBroken, Exception):
-            pass
+            typer.echo(
+                f"[modal-uv] Stale container still draining "
+                f"(attempt {attempt}/{max_retries}), waiting...",
+                err=True,
+            )
+        except (DeploymentMissing, DeploymentBroken):
+            typer.echo(
+                f"[modal-uv] Container not ready yet (attempt {attempt}/{max_retries})...",
+                err=True,
+            )
+        except Exception:
+            typer.echo(
+                f"[modal-uv] Query failed (attempt {attempt}/{max_retries}), retrying...",
+                err=True,
+            )
         time.sleep(interval)
     typer.echo(
         f"[modal-uv] Deployment not ready after {max_retries} attempts, proceeding anyway.",

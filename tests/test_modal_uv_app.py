@@ -12,8 +12,10 @@ def _make_config() -> dict[str, Any]:
     return {
         "app_name": "test-app",
         "gpu": "T4",
-        "volume_name": "test-volume",
-        "volume_mount_path": "/mnt/volume",
+        "volumes": [
+            {"name": "test-volume", "mount_path": "/mnt/volume", "commit_interval_seconds": 45},
+        ],
+        "env": {},
         "work_dir": "/tmp/work",
         "image_base": "python:3.12-slim",
         "fingerprint": "abc123",
@@ -88,13 +90,6 @@ def test_create_app_limits_worker_to_one_container(mock_modal: MagicMock) -> Non
 
 
 @patch("modal_uv.app.modal")
-def test_create_app_accepts_volume_commit_interval(mock_modal: MagicMock) -> None:
-    _setup_mocks(mock_modal)
-
-    create_app(**_make_config(), commit_interval_seconds=45)
-
-
-@patch("modal_uv.app.modal")
 def test_create_app_registers_deployment_fingerprint_on_custom_image(mock_modal: MagicMock) -> None:
     mock_app = _setup_mocks(mock_modal)
 
@@ -115,3 +110,47 @@ def test_create_app_registers_deployment_fingerprint_function(mock_modal: MagicM
     create_app(**_make_config())
 
     assert mock_app.function.called
+
+
+@patch("modal_uv.app.modal")
+def test_create_app_passes_volumes_to_worker(mock_modal: MagicMock) -> None:
+    mock_app = _setup_mocks(mock_modal)
+
+    config = _make_config()
+    config["volumes"] = [
+        {"name": "vol-a", "mount_path": "/mnt/a", "commit_interval_seconds": 30},
+        {"name": "vol-b", "mount_path": "/mnt/b", "commit_interval_seconds": 60},
+    ]
+    create_app(**config)
+
+    cls_kwargs = mock_app.cls.call_args.kwargs
+    assert "/mnt/a" in cls_kwargs["volumes"]
+    assert "/mnt/b" in cls_kwargs["volumes"]
+
+
+@patch("modal_uv.app.modal")
+def test_create_app_no_volumes_omits_volumes_kwarg(mock_modal: MagicMock) -> None:
+    mock_app = _setup_mocks(mock_modal)
+
+    config = _make_config()
+    config["volumes"] = []
+    create_app(**config)
+
+    cls_kwargs = mock_app.cls.call_args.kwargs
+    assert "volumes" not in cls_kwargs
+
+
+@patch("modal_uv.app.modal")
+def test_create_app_merges_user_env_over_infra_defaults(mock_modal: MagicMock) -> None:
+    _setup_mocks(mock_modal)
+
+    config = _make_config()
+    config["env"] = {"MY_KEY": "val", "UV_PROJECT_ENVIRONMENT": "/custom"}
+    create_app(**config)
+
+    run_commands = mock_modal.Image.from_registry.return_value.apt_install.return_value.run_commands
+    env_call = run_commands.return_value.pip_install.return_value.env
+    env_dict = env_call.call_args.args[0]
+    assert env_dict["MY_KEY"] == "val"
+    assert env_dict["UV_PROJECT_ENVIRONMENT"] == "/custom"
+    assert env_dict["UV_LINK_MODE"] == "copy"

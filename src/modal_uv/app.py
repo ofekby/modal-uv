@@ -20,42 +20,38 @@ from modal_uv.sync import (
     uv_run_env,
 )
 
-COMMIT_INTERVAL_SECONDS = 30
+_INFRA_ENV = {
+    "PATH": "/root/.local/bin:/usr/local/bin:/usr/bin:/bin",
+    "UV_LINK_MODE": "copy",
+    "UV_PROJECT_ENVIRONMENT": "/usr/local",
+}
 
 
 def create_app(
     app_name: str,
     gpu: str | None,
-    volume_name: str,
-    volume_mount_path: str,
+    volumes: list[dict[str, Any]],
+    env: dict[str, str],
     work_dir: str,
     image_base: str,
     fingerprint: str,
-    commit_interval_seconds: int = COMMIT_INTERVAL_SECONDS,
 ) -> modal.App:
     """Create a Modal app from config."""
     app = modal.App(name=app_name)
 
-    modal_volume = modal.Volume.from_name(
-        volume_name,
-        create_if_missing=True,
-    )
+    modal_volumes: dict[str, modal.Volume] = {}
+    for vol in volumes:
+        mv = modal.Volume.from_name(vol["name"], create_if_missing=True)
+        modal_volumes[vol["mount_path"]] = mv
+
+    merged_env = {**_INFRA_ENV, **env}
 
     image = (
         modal.Image.from_registry(image_base)
         .apt_install("curl")
         .run_commands("curl -LsSf https://astral.sh/uv/install.sh | sh")
         .pip_install("pathspec")
-        .env(
-            {
-                "PATH": "/root/.local/bin:/usr/local/bin:/usr/bin:/bin",
-                "HF_HUB_CACHE": f"{volume_mount_path}/huggingface/hub",
-                "HF_HOME": f"{volume_mount_path}/huggingface",
-                "HF_XET_HIGH_PERFORMANCE": "1",
-                "UV_LINK_MODE": "copy",
-                "UV_PROJECT_ENVIRONMENT": "/usr/local",
-            }
-        )
+        .env(merged_env)
         .add_local_python_source("modal_uv")
     )
 
@@ -63,14 +59,20 @@ def create_app(
     def _deployment_fingerprint() -> str:
         return fingerprint
 
+    commit_specs: list[tuple[modal.Volume, int]] = [
+        (mv, vol["commit_interval_seconds"])
+        for vol, mv in zip(volumes, modal_volumes.values(), strict=True)
+    ]
+
     cls_options: dict[str, Any] = {
-        "volumes": {volume_mount_path: modal_volume},
         "scaledown_window": 300,
         "timeout": 7200,
         "max_containers": 1,
         "image": image,
         "serialized": True,
     }
+    if modal_volumes:
+        cls_options["volumes"] = modal_volumes
     if gpu is not None:
         cls_options["gpu"] = gpu
 
@@ -95,25 +97,35 @@ def create_app(
             save_state_csv(Path(work_dir) / STATE_FILE_NAME, manifest)
 
             stop_event = threading.Event()
+            threads: list[threading.Thread] = []
 
-            def periodic_volume_commit() -> None:
-                while not stop_event.wait(commit_interval_seconds):
-                    try:
-                        modal_volume.commit()
-                    except Exception as exc:
-                        print(f"[modal-uv] periodic commit failed: {exc}", flush=True)
+            for vol_obj, interval in commit_specs:
 
-            commit_thread = threading.Thread(target=periodic_volume_commit, daemon=True)
-            commit_thread.start()
+                def make_commit_thread(v: modal.Volume, iv: int) -> threading.Thread:
+                    def loop() -> None:
+                        while not stop_event.wait(iv):
+                            try:
+                                v.commit()
+                            except Exception as exc:
+                                print(f"[modal-uv] periodic commit failed: {exc}", flush=True)
+
+                    return threading.Thread(target=loop, daemon=True)
+
+                t = make_commit_thread(vol_obj, interval)
+                t.start()
+                threads.append(t)
+
             result = subprocess.run(
                 uv_run_command(args),
                 cwd=work_dir,
                 env=uv_run_env(Path(work_dir)),
             )
             stop_event.set()
-            commit_thread.join(timeout=10)
+            for t in threads:
+                t.join(timeout=10)
 
-            modal_volume.commit()
+            for vol_obj, _ in commit_specs:
+                vol_obj.commit()
             return result.returncode
 
     return app
