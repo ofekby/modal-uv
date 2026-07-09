@@ -2,4 +2,6 @@
 
 from __future__ import annotations
 
-__version__ = "0.2.0"
+from importlib.metadata import version
+
+__version__ = version("modal-uv")
