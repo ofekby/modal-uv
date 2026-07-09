@@ -2,6 +2,15 @@
 
 from __future__ import annotations
 
-from importlib.metadata import version
+import os
+from importlib.metadata import PackageNotFoundError, version
 
-__version__ = version("modal-uv")
+
+def _version() -> str:
+    try:
+        return version("modal-uv")
+    except PackageNotFoundError:
+        return os.environ["MODAL_UV_VERSION"]
+
+
+__version__ = _version()

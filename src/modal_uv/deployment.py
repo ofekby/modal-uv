@@ -24,6 +24,8 @@ from modal_uv.app import create_app
 app = create_app(
     app_name={app_name!r},
     gpu={gpu!r},
+    cpu={cpu!r},
+    memory={memory!r},
     volumes={volumes!r},
     env={env!r},
     scaledown_window_seconds={scaledown_window_seconds!r},
@@ -47,7 +49,6 @@ def deployment_parameters(config: ModalUVConfig) -> dict[str, Any]:
     """Return config values that affect the Modal deployment shape."""
     return {
         "app_name": config.app_name,
-        "gpu": config.gpu,
         "work_dir": config.work_dir.as_posix(),
         "volumes": [
             {
@@ -59,6 +60,9 @@ def deployment_parameters(config: ModalUVConfig) -> dict[str, Any]:
         ],
         "env": dict(config.env),
         "runtime": {
+            "gpu": config.runtime.gpu,
+            "cpu": config.runtime.cpu,
+            "memory": config.runtime.memory,
             "scaledown_window_seconds": config.runtime.scaledown_window_seconds,
             "exec": config.runtime.exec,
         },
@@ -139,7 +143,9 @@ def render_deployment(template_text: str, parameters: dict[str, Any], fingerprin
     return template_text.format(
         fingerprint=fingerprint,
         app_name=parameters["app_name"],
-        gpu=parameters["gpu"],
+        gpu=runtime["gpu"],
+        cpu=runtime["cpu"],
+        memory=runtime["memory"],
         volumes=parameters["volumes"],
         env=parameters["env"],
         scaledown_window_seconds=runtime["scaledown_window_seconds"],

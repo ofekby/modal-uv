@@ -569,7 +569,8 @@ def test_status_shows_app(mock_subprocess: MagicMock, tmp_path: Path) -> None:
         tmp_path,
         """\
         app_name: "test-app"
-        gpu: "T4"
+        runtime:
+          gpu: "T4"
         volumes:
           - name: "test-volume"
             mount_path: "/mnt/volume"
@@ -620,7 +621,8 @@ def test_status_no_app_found(mock_subprocess: MagicMock, tmp_path: Path) -> None
         tmp_path,
         """\
         app_name: "test-app"
-        gpu: "T4"
+        runtime:
+          gpu: "T4"
         volumes:
           - name: "test-volume"
             mount_path: "/mnt/volume"
@@ -918,6 +920,9 @@ def test_init_creates_default_config_when_missing(
     assert "app_name:" in content
     assert tmp_path.name in content
     assert "runtime:" in content
+    assert 'gpu: "T4"' in content
+    assert "cpu:" not in content
+    assert "memory:" not in content
     assert "scaledown_window_seconds: 300" in content
     assert "exec:" not in content
     assert (tmp_path / ".modal-uv").is_dir()

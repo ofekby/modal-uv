@@ -55,7 +55,6 @@ See [Sync vs Deployment](#sync-vs-deployment-when-does-each-happen) for details 
 
 ```yaml
 app_name: "my-project"
-gpu: "T4"
 work_dir: "/tmp/work"
 
 volumes:
@@ -66,6 +65,9 @@ volumes:
 env: {}
 
 runtime:
+  gpu: "T4"
+  cpu: 2
+  memory: 4096
   scaledown_window_seconds: 300
 
 image:
@@ -135,14 +137,14 @@ No redeploy is needed for any of these. The warm container's filesystem is the s
 The daemon deploys or redeploys the Modal app only when a **deployment fingerprint** changes. The fingerprint is a SHA256 hash of:
 
 - The unrendered deployment template (shipped with the `modal-uv` package)
-- Modal-relevant config values from `modal-uv.yaml`: `app_name`, `gpu`, `work_dir`, `volumes`, `env`, `runtime`, `image.python_version`, `image.base_image`
+- Modal-relevant config values from `modal-uv.yaml`: `app_name`, `work_dir`, `volumes`, `env`, `runtime`, `image.python_version`, `image.base_image`
 - The SHA256 of the repo root `pyproject.toml` (if present)
 
 On daemon startup, it queries the deployed app's fingerprint. If it matches, the existing deployment is reused. If it differs or the app is missing, it generates `.modal-uv/deployment.py` and runs `modal deploy`.
 
 **What triggers a redeploy:**
 
-- Changing `gpu` from `T4` to `A100`
+- Changing `runtime.gpu` from `T4` to `A100`
 - Changing `app_name`, `work_dir`, `volumes`, `env`, or `runtime`
 - Changing `image.python_version` or `image.base_image`
 - Updating dependencies in `pyproject.toml` (its SHA256 changes)

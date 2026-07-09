@@ -22,7 +22,8 @@ def test_minimal_valid_yaml(tmp_path: Path) -> None:
         tmp_path,
         """\
         app_name: "test-app"
-        gpu: "T4"
+        runtime:
+          gpu: "T4"
         volumes:
           - name: "test-volume"
             mount_path: "/mnt/volume"
@@ -30,7 +31,8 @@ def test_minimal_valid_yaml(tmp_path: Path) -> None:
     )
     config = load_config(path)
     assert config.app_name == "test-app"
-    assert config.gpu == "T4"
+    assert not hasattr(config, "gpu")
+    assert config.runtime.gpu == "T4"
     assert config.volumes[0].name == "test-volume"
 
 
@@ -116,7 +118,6 @@ def test_full_yaml(tmp_path: Path) -> None:
         tmp_path,
         """\
         app_name: "my-app"
-        gpu: "A100"
         work_dir: "/custom/work"
 
         volumes:
@@ -124,6 +125,9 @@ def test_full_yaml(tmp_path: Path) -> None:
             mount_path: "/custom/cache"
 
         runtime:
+          gpu: "A100"
+          cpu: 2.5
+          memory: 4096
           scaledown_window_seconds: 120
 
         image:
@@ -138,10 +142,12 @@ def test_full_yaml(tmp_path: Path) -> None:
     )
     config = load_config(path)
     assert config.app_name == "my-app"
-    assert config.gpu == "A100"
     assert config.work_dir == Path("/custom/work")
     assert config.volumes[0].name == "my-volume"
     assert config.volumes[0].mount_path == Path("/custom/cache")
+    assert config.runtime.gpu == "A100"
+    assert config.runtime.cpu == 2.5
+    assert config.runtime.memory == 4096
     assert config.runtime.scaledown_window_seconds == 120
     assert config.image.python_version == "3.11"
     assert config.image.base_image == "python:3.11-slim"
@@ -159,7 +165,8 @@ def test_invalid_gpu_fails(tmp_path: Path) -> None:
         tmp_path,
         """\
         app_name: "test-app"
-        gpu: "INVALID"
+        runtime:
+          gpu: "INVALID"
         volumes:
           - name: "test-volume"
             mount_path: "/mnt/volume"
@@ -173,7 +180,8 @@ def test_missing_app_name_fails(tmp_path: Path) -> None:
     path = _write_yaml(
         tmp_path,
         """\
-        gpu: "T4"
+        runtime:
+          gpu: "T4"
         volumes:
           - name: "test-volume"
             mount_path: "/mnt/volume"
@@ -188,7 +196,6 @@ def test_missing_volume_name_fails(tmp_path: Path) -> None:
         tmp_path,
         """\
         app_name: "test-app"
-        gpu: "T4"
         volumes:
           - mount_path: "/custom/cache"
         """,
@@ -207,7 +214,9 @@ def test_defaults_applied(tmp_path: Path) -> None:
         """,
     )
     config = load_config(path)
-    assert config.gpu is None
+    assert config.runtime.gpu is None
+    assert config.runtime.cpu is None
+    assert config.runtime.memory is None
     assert config.work_dir == Path("/root/work")
     assert config.volumes[0].mount_path == Path("/root/.cache")
     assert config.image.python_version == "3.12"
@@ -327,7 +336,8 @@ def test_env_does_not_override_yaml(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         tmp_path,
         """\
         app_name: "test-app"
-        gpu: "T4"
+        runtime:
+          gpu: "T4"
         volumes:
           - name: "test-volume"
             mount_path: "/mnt/volume"
@@ -335,7 +345,7 @@ def test_env_does_not_override_yaml(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     )
     monkeypatch.setenv("MODAL_UV_GPU", "A100")
     config = load_config(path)
-    assert config.gpu == "T4"
+    assert config.runtime.gpu == "T4"
 
 
 def test_a100_80gb_gpu_is_allowed(tmp_path: Path) -> None:
@@ -343,14 +353,15 @@ def test_a100_80gb_gpu_is_allowed(tmp_path: Path) -> None:
         tmp_path,
         """\
         app_name: "test-app"
-        gpu: "a100-80gb"
+        runtime:
+          gpu: "a100-80gb"
         volumes:
           - name: "test-volume"
             mount_path: "/mnt/volume"
         """,
     )
     config = load_config(path)
-    assert config.gpu == "A100-80GB"
+    assert config.runtime.gpu == "A100-80GB"
 
 
 def test_gpu_case_normalized(tmp_path: Path) -> None:
@@ -358,11 +369,40 @@ def test_gpu_case_normalized(tmp_path: Path) -> None:
         tmp_path,
         """\
         app_name: "test-app"
-        gpu: "a100"
+        runtime:
+          gpu: "a100"
         volumes:
           - name: "test-volume"
             mount_path: "/mnt/volume"
         """,
     )
     config = load_config(path)
-    assert config.gpu == "A100"
+    assert config.runtime.gpu == "A100"
+
+
+def test_runtime_cpu_must_be_positive(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        runtime:
+          cpu: 0
+        """,
+    )
+
+    with pytest.raises(ConfigError, match="cpu"):
+        load_config(path)
+
+
+def test_runtime_memory_must_be_positive(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        runtime:
+          memory: 0
+        """,
+    )
+
+    with pytest.raises(ConfigError, match="memory"):
+        load_config(path)

@@ -524,7 +524,6 @@ def _load_tracking_config(config: ModalUVConfig) -> TrackingConfig:
 def _default_config(app_name: str) -> str:
     return f"""\
 app_name: "{app_name}"
-gpu: "T4"
 work_dir: "/tmp/work"
 
 volumes:
@@ -535,6 +534,7 @@ volumes:
 env: {{}}
 
 runtime:
+  gpu: "T4"
   scaledown_window_seconds: 300
 
 image:

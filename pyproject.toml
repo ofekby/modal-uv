@@ -1,6 +1,6 @@
 [project]
 name = "modal-uv"
-version = "0.2.2"
+version = "0.3.0"
 description = "Run uv commands on Modal.com with GPU and direct file sync"
 readme = "README.md"
 requires-python = ">=3.12"

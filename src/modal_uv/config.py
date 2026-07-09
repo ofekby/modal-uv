@@ -50,6 +50,9 @@ class SyncConfig:
 class RuntimeConfig:
     """Modal runtime behavior configuration."""
 
+    gpu: str | None
+    cpu: float | None
+    memory: int | None
     scaledown_window_seconds: int
     exec: str | None
 
@@ -59,7 +62,6 @@ class ModalUVConfig:
     """Complete modal-uv configuration."""
 
     app_name: str
-    gpu: str | None
     work_dir: Path
     volumes: tuple[VolumeConfig, ...]
     env: tuple[tuple[str, str], ...]
@@ -125,8 +127,37 @@ class _RawSync(BaseModel):
 class _RawRuntime(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
+    gpu: str | None = None
+    cpu: float | None = None
+    memory: int | None = None
     scaledown_window_seconds: int = _DEFAULT_SCALEDOWN_WINDOW_SECONDS
     exec: str | None = None
+
+    @field_validator("gpu")
+    @classmethod
+    def validate_gpu(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        upper = value.strip().upper()
+        if upper in {"", "NONE", "CPU"}:
+            return None
+        if upper not in ALLOWED_GPUS:
+            raise ValueError(f"gpu must be one of {sorted(ALLOWED_GPUS)}, got {value!r}")
+        return upper
+
+    @field_validator("cpu")
+    @classmethod
+    def validate_cpu(cls, value: float | None) -> float | None:
+        if value is not None and value <= 0:
+            raise ValueError("cpu must be greater than 0")
+        return value
+
+    @field_validator("memory")
+    @classmethod
+    def validate_memory(cls, value: int | None) -> int | None:
+        if value is not None and value <= 0:
+            raise ValueError("memory must be greater than 0")
+        return value
 
     @field_validator("scaledown_window_seconds")
     @classmethod
@@ -151,7 +182,6 @@ class _RawSettings(BaseSettings):
     )
 
     app_name: str = ""
-    gpu: str | None = None
     work_dir: Path = _DEFAULT_WORK_DIR
     volumes: list[_RawVolume] = Field(default_factory=list)
     env: dict[str, str] = Field(default_factory=dict)
@@ -165,18 +195,6 @@ class _RawSettings(BaseSettings):
         if not value.strip():
             raise ValueError("app_name must be a non-empty string")
         return value.strip()
-
-    @field_validator("gpu")
-    @classmethod
-    def validate_gpu(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
-        upper = value.strip().upper()
-        if upper in {"", "NONE", "CPU"}:
-            return None
-        if upper not in ALLOWED_GPUS:
-            raise ValueError(f"gpu must be one of {sorted(ALLOWED_GPUS)}, got {value!r}")
-        return upper
 
     @classmethod
     def settings_customise_sources(
@@ -242,11 +260,13 @@ def load_config(config_path: Path | None = None) -> ModalUVConfig:
 
     return ModalUVConfig(
         app_name=settings.app_name,
-        gpu=settings.gpu,
         work_dir=settings.work_dir,
         volumes=tuple(volumes),
         env=tuple(settings.env.items()),
         runtime=RuntimeConfig(
+            gpu=settings.runtime.gpu,
+            cpu=settings.runtime.cpu,
+            memory=settings.runtime.memory,
             scaledown_window_seconds=settings.runtime.scaledown_window_seconds,
             exec=settings.runtime.exec,
         ),

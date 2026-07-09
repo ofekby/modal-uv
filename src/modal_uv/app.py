@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 import threading
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
@@ -20,8 +21,17 @@ from modal_uv.sync import (
     uv_run_env,
 )
 
+
+def _modal_uv_version() -> str:
+    try:
+        return version("modal-uv")
+    except PackageNotFoundError:
+        return os.environ["MODAL_UV_VERSION"]
+
+
 _INFRA_ENV = {
     "PATH": "/root/.local/bin:/usr/local/bin:/usr/bin:/bin",
+    "MODAL_UV_VERSION": _modal_uv_version(),
     "UV_LINK_MODE": "copy",
     "UV_PROJECT_ENVIRONMENT": "/usr/local",
 }
@@ -30,6 +40,8 @@ _INFRA_ENV = {
 def create_app(
     app_name: str,
     gpu: str | None,
+    cpu: float | None,
+    memory: int | None,
     volumes: list[dict[str, Any]],
     env: dict[str, str],
     scaledown_window_seconds: int,
@@ -77,6 +89,10 @@ def create_app(
         cls_options["volumes"] = modal_volumes
     if gpu is not None:
         cls_options["gpu"] = gpu
+    if cpu is not None:
+        cls_options["cpu"] = cpu
+    if memory is not None:
+        cls_options["memory"] = memory
 
     @app.cls(**cls_options)
     @modal.concurrent(max_inputs=1)

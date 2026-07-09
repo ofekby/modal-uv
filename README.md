@@ -18,7 +18,7 @@ Install modal-uv globally and set it up:
 3. In the project repo, run: modal-uv init
    - This creates modal-uv.yaml with defaults if missing
    - It creates .modal-uv/ for generated state and adds it to .gitignore
-4. Edit modal-uv.yaml to set app_name, gpu, and volumes[].name for this project
+4. Edit modal-uv.yaml to set app_name, runtime.gpu, and volumes[].name for this project
 5. Run: modal-uv doctor
    - This checks modal-uv health: auth state, volume existence, app deployment, daemon status
    - Does not wake the container
@@ -50,7 +50,6 @@ Edit `modal-uv.yaml` to configure your app:
 
 ```yaml
 app_name: "my-project"
-gpu: "T4"
 work_dir: "/tmp/work"
 
 volumes:
@@ -61,6 +60,9 @@ volumes:
 env: {}
 
 runtime:
+  gpu: "T4"
+  cpu: 2
+  memory: 4096
   scaledown_window_seconds: 300
 
 image:
@@ -86,13 +88,15 @@ modal-uv run -- pytest
 Fields:
 
 - `app_name`: Modal app name (required)
-- `gpu`: GPU type, such as `T4`, `A10G`, `A100`, `H100`, or `L4`
 - `work_dir`: Working directory inside the Modal container (default: `/root/work`)
 - `volumes`: Modal volumes to mount in the container; may be empty or omitted
 - `volumes[].name`: Modal volume name
 - `volumes[].mount_path`: Mount path in the container (default: `/root/.cache`)
 - `volumes[].commit_interval_seconds`: Periodic Modal Volume commit interval while a command runs (default: `30`)
 - `env`: Extra container environment variables merged over modal-uv defaults
+- `runtime.gpu`: Optional GPU type, such as `T4`, `A10G`, `A100`, `H100`, or `L4`; omit for CPU-only containers
+- `runtime.cpu`: Optional Modal CPU request
+- `runtime.memory`: Optional Modal memory request in MiB
 - `runtime.scaledown_window_seconds`: Modal worker scaledown window (default: `300`)
 - `runtime.exec`: Optional shell executable for `modal-uv exec`; if omitted, the remote Worker uses `$SHELL`, then `/bin/sh`
 - `image.python_version`: Python version (default: `3.12`)

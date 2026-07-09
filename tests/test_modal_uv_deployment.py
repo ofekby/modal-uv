@@ -32,7 +32,6 @@ def _config(tmp_path: Path):
         tmp_path,
         """\
         app_name: "test-app"
-        gpu: "T4"
         work_dir: "/tmp/work"
         volumes:
           - name: "test-volume"
@@ -41,6 +40,9 @@ def _config(tmp_path: Path):
         env:
           MY_KEY: "myval"
         runtime:
+          gpu: "T4"
+          cpu: 2
+          memory: 2048
           scaledown_window_seconds: 120
         image:
           python_version: "3.12"
@@ -70,7 +72,6 @@ def test_deployment_parameters_exclude_sync_ignore(tmp_path: Path) -> None:
 
     assert params == {
         "app_name": "test-app",
-        "gpu": "T4",
         "work_dir": "/tmp/work",
         "volumes": [
             {
@@ -80,7 +81,13 @@ def test_deployment_parameters_exclude_sync_ignore(tmp_path: Path) -> None:
             }
         ],
         "env": {"MY_KEY": "myval"},
-        "runtime": {"scaledown_window_seconds": 120, "exec": None},
+        "runtime": {
+            "gpu": "T4",
+            "cpu": 2.0,
+            "memory": 2048,
+            "scaledown_window_seconds": 120,
+            "exec": None,
+        },
         "image": {"python_version": "3.12", "base_image": "python:3.12-slim"},
     }
 
@@ -114,7 +121,10 @@ def test_deployment_fingerprint_changes_when_template_changes(tmp_path: Path) ->
 def test_deployment_fingerprint_changes_when_parameters_change(tmp_path: Path) -> None:
     config = _config(tmp_path)
     first_params = deployment_parameters(config)
-    second_params = {**first_params, "gpu": "A100"}
+    second_params = {
+        **first_params,
+        "runtime": {**first_params["runtime"], "gpu": "A100"},
+    }
 
     first = deployment_fingerprint("template", first_params, tmp_path)
     second = deployment_fingerprint("template", second_params, tmp_path)
@@ -229,6 +239,19 @@ def test_render_deployment_embeds_scaledown_window(tmp_path: Path) -> None:
     rendered = render_deployment(template, params, fingerprint)
 
     assert "scaledown_window_seconds=120" in rendered
+
+
+def test_render_deployment_embeds_runtime_resources(tmp_path: Path) -> None:
+    config = _config(tmp_path)
+    params = deployment_parameters(config)
+    template = load_deployment_template()
+    fingerprint = deployment_fingerprint(template, params, tmp_path)
+
+    rendered = render_deployment(template, params, fingerprint)
+
+    assert "gpu='T4'" in rendered
+    assert "cpu=2.0" in rendered
+    assert "memory=2048" in rendered
 
 
 def test_render_deployment_embeds_runtime_exec(tmp_path: Path) -> None:

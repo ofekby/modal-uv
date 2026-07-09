@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from modal_uv import __version__
 from modal_uv.app import create_app
 
 
@@ -15,6 +16,8 @@ def _make_config() -> dict[str, Any]:
     return {
         "app_name": "test-app",
         "gpu": "T4",
+        "cpu": 2.0,
+        "memory": 2048,
         "volumes": [
             {"name": "test-volume", "mount_path": "/mnt/volume", "commit_interval_seconds": 45},
         ],
@@ -134,6 +137,7 @@ def test_create_app_configures_uv_to_use_system_environment(mock_modal: MagicMoc
     env_call = run_commands.return_value.pip_install.return_value.env
     env_call.assert_called_once()
     assert env_call.call_args.args[0]["UV_PROJECT_ENVIRONMENT"] == "/usr/local"
+    assert env_call.call_args.args[0]["MODAL_UV_VERSION"] == __version__
 
 
 @patch("modal_uv.app.modal")
@@ -154,6 +158,30 @@ def test_create_app_uses_scaledown_window(mock_modal: MagicMock) -> None:
 
     cls_kwargs = mock_app.cls.call_args.kwargs
     assert cls_kwargs["scaledown_window"] == 120
+
+
+@patch("modal_uv.app.modal")
+def test_create_app_passes_runtime_resources_to_worker(mock_modal: MagicMock) -> None:
+    mock_app = _setup_mocks(mock_modal)
+
+    create_app(**_make_config())
+
+    cls_kwargs = mock_app.cls.call_args.kwargs
+    assert cls_kwargs["gpu"] == "T4"
+    assert cls_kwargs["cpu"] == 2.0
+    assert cls_kwargs["memory"] == 2048
+
+
+@patch("modal_uv.app.modal")
+def test_create_app_omits_gpu_when_not_configured(mock_modal: MagicMock) -> None:
+    mock_app = _setup_mocks(mock_modal)
+
+    config = _make_config()
+    config["gpu"] = None
+    create_app(**config)
+
+    cls_kwargs = mock_app.cls.call_args.kwargs
+    assert "gpu" not in cls_kwargs
 
 
 @patch("modal_uv.app.modal")
