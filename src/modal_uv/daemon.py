@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from modal_uv.config import load_config
 from modal_uv.deployment import ensure_deployment_current
 from modal_uv.paths import ensure_repo_state
-from modal_uv.sync import FilePayload, FileState
+from modal_uv.sync import FilePayload, FileState, validate_relative_path
 
 
 class PlanSyncRequest(BaseModel):
@@ -98,13 +98,13 @@ def spawn(req: SpawnRequest) -> DaemonResponse:
 
 
 def _read_payloads(missing_paths: list[str], manifest: list[FileState]) -> list[FilePayload]:
+    for item in manifest:
+        validate_relative_path(item.path)
     state_by_path = {item.path: item for item in manifest}
     payloads: list[FilePayload] = []
     for rel_path in missing_paths:
+        source = _safe_repo_path(rel_path)
         state = state_by_path[rel_path]
-        if _repo_root is None:
-            raise RuntimeError("daemon repo root is not initialized")
-        source = _repo_root / rel_path
         if not source.exists():
             raise FileNotFoundError(f"missing upload file: {rel_path}")
         payloads.append(
@@ -116,6 +116,18 @@ def _read_payloads(missing_paths: list[str], manifest: list[FileState]) -> list[
             )
         )
     return payloads
+
+
+def _safe_repo_path(relative_path: str) -> Path:
+    validate_relative_path(relative_path)
+    if _repo_root is None:
+        raise RuntimeError("daemon repo root is not initialized")
+
+    repo_root = os.path.realpath(_repo_root)
+    source = os.path.realpath(os.path.join(repo_root, relative_path))
+    if os.path.commonpath([repo_root, source]) != repo_root:
+        raise ValueError(f"unsafe path: {relative_path}")
+    return Path(source)
 
 
 def _query_remote_fingerprint() -> str:

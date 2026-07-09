@@ -196,6 +196,16 @@ def test_read_payloads_rejects_missing_file(tmp_path: Path) -> None:
         _read_payloads(["missing.py"], [fs])
 
 
+@pytest.mark.parametrize("unsafe_path", ["../outside.txt", "/tmp/outside.txt"])
+def test_read_payloads_rejects_unsafe_paths(tmp_path: Path, unsafe_path: str) -> None:
+    fs = FileState(path=unsafe_path, size=7, mtime_ns=1)
+    import modal_uv.daemon as d
+
+    d._repo_root = tmp_path
+    with pytest.raises(ValueError, match="unsafe path"):
+        _read_payloads([unsafe_path], [fs])
+
+
 def test_spawn_forwards_run_mode(tmp_path: Path) -> None:
     worker = MagicMock()
     worker.sync_and_run.spawn.return_value.object_id = "fc-run"
