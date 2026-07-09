@@ -18,7 +18,7 @@ Install modal-uv globally and set it up:
 3. In the project repo, run: modal-uv init
    - This creates modal-uv.yaml with defaults if missing
    - It creates .modal-uv/ for generated state and adds it to .gitignore
-4. Edit modal-uv.yaml to set app_name, gpu, and volume.name for this project
+4. Edit modal-uv.yaml to set app_name, gpu, and volumes[].name for this project
 5. Run: modal-uv doctor
    - This checks modal-uv health: auth state, volume existence, app deployment, daemon status
    - Does not wake the container
@@ -118,7 +118,7 @@ Examples of generated files:
 
 The detached daemon lazily ensures the Modal app is deployed before running work. It generates `.modal-uv/deployment.py` and redeploys when the deployment fingerprint changes. The fingerprint includes the deployment template, Modal-relevant config values, and the repo `pyproject.toml` SHA256 when present.
 
-During a running command, `modal-uv` periodically commits the Modal Volume every `volume.commit_interval_seconds` seconds, plus one final commit after the command exits. This persists outputs and checkpoints written under the mounted volume during long runs.
+During a running command, `modal-uv` periodically commits each Modal Volume every `volumes[].commit_interval_seconds` seconds, plus one final commit after the command exits. This persists outputs and checkpoints written under mounted volumes during long runs.
 
 Ordinary source changes do not redeploy the app; they are handled by direct sync.
 
