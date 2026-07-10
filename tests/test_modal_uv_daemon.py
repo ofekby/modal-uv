@@ -27,6 +27,7 @@ def _setup_daemon(tmp_path: Path, worker: MagicMock) -> None:
 
     d._worker = worker
     d._repo_root = tmp_path
+    d._daemon_fingerprint = "daemon-fp"
 
 
 def _write_yaml(tmp_path: Path) -> Path:
@@ -52,6 +53,89 @@ def test_ping() -> None:
     data = resp.json()
     assert data["status"] == "ok"
     assert data["result"] == "pong"
+
+
+def test_fingerprint_returns_daemon_startup_fingerprint() -> None:
+    import modal_uv.daemon as d
+
+    d._daemon_fingerprint = "daemon-fp"
+    client = TestClient(app)
+
+    resp = client.get("/fingerprint")
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "ok"
+    assert data["result"] == "daemon-fp"
+
+
+@patch("modal_uv.client.stop_daemon")
+@patch("modal_uv.client._wait_for_socket")
+@patch("modal_uv.client._spawn_daemon")
+@patch("modal_uv.client._daemon_alive", return_value=True)
+@patch("modal_uv.client.httpx.HTTPTransport")
+@patch("modal_uv.client.httpx.Client")
+@patch("modal_uv.client.daemon_fingerprint", return_value="expected-fp")
+def test_ensure_daemon_restarts_when_fingerprint_mismatches(
+    mock_fingerprint: MagicMock,
+    mock_client_class: MagicMock,
+    mock_transport: MagicMock,
+    mock_alive: MagicMock,
+    mock_spawn: MagicMock,
+    mock_wait: MagicMock,
+    mock_stop: MagicMock,
+    tmp_path: Path,
+) -> None:
+    from modal_uv.client import ensure_daemon
+
+    stale_client = MagicMock()
+    stale_client.get.return_value.json.return_value = {"status": "ok", "result": "stale-fp"}
+    fresh_client = MagicMock()
+    fresh_client.get.return_value.json.return_value = {"status": "ok", "result": "expected-fp"}
+    mock_client_class.side_effect = [stale_client, fresh_client]
+    config_path = tmp_path / "modal-uv.yaml"
+
+    result = ensure_daemon(config_path, tmp_path)
+
+    assert result is fresh_client
+    stale_client.close.assert_called_once_with()
+    mock_stop.assert_called_once_with(tmp_path)
+    mock_spawn.assert_called_once_with(config_path, tmp_path)
+    mock_wait.assert_called_once()
+    assert mock_client_class.call_count == 2
+
+
+@patch("modal_uv.client.stop_daemon")
+@patch("modal_uv.client._wait_for_socket")
+@patch("modal_uv.client._spawn_daemon")
+@patch("modal_uv.client._daemon_alive", return_value=True)
+@patch("modal_uv.client.httpx.HTTPTransport")
+@patch("modal_uv.client.httpx.Client")
+@patch("modal_uv.client.daemon_fingerprint", return_value="expected-fp")
+def test_ensure_daemon_reuses_matching_fingerprint(
+    mock_fingerprint: MagicMock,
+    mock_client_class: MagicMock,
+    mock_transport: MagicMock,
+    mock_alive: MagicMock,
+    mock_spawn: MagicMock,
+    mock_wait: MagicMock,
+    mock_stop: MagicMock,
+    tmp_path: Path,
+) -> None:
+    from modal_uv.client import ensure_daemon
+
+    client = MagicMock()
+    client.get.return_value.json.return_value = {"status": "ok", "result": "expected-fp"}
+    mock_client_class.return_value = client
+    config_path = tmp_path / "modal-uv.yaml"
+
+    result = ensure_daemon(config_path, tmp_path)
+
+    assert result is client
+    client.close.assert_not_called()
+    mock_stop.assert_not_called()
+    mock_spawn.assert_not_called()
+    mock_wait.assert_not_called()
 
 
 @patch("modal_uv.daemon.uvicorn.Server")

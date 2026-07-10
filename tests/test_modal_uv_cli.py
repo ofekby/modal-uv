@@ -40,6 +40,7 @@ def test_help_lists_commands() -> None:
 
 
 @patch("modal_uv.cli._ensure_deployment_with_notice")
+@patch("modal_uv.cli._tail_initial_output", return_value=None)
 @patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
 @patch("modal_uv.cli.send_request")
 @patch("modal_uv.cli.ensure_daemon")
@@ -47,6 +48,7 @@ def test_run_prints_spawned_execution_id(
     mock_ensure: MagicMock,
     mock_send: MagicMock,
     mock_fp: MagicMock,
+    mock_tail: MagicMock,
     mock_deploy: MagicMock,
     tmp_path: Path,
 ) -> None:
@@ -85,14 +87,51 @@ def test_run_prints_spawned_execution_id(
 
     assert result.exit_code == 0
     assert "Execution ID: fc-123" in result.stdout
+    assert "Tailing output for 10 seconds..." in result.stdout
+    assert "Execution took more than 10 seconds." in result.stdout
     assert "Tail logs: modal-uv logs fc-123" in result.stdout
     assert "Abort: modal-uv abort fc-123" in result.stdout
+    mock_tail.assert_called_once_with("test-app", "fc-123")
     assert mock_send.call_count == 2
     spawn_payload = mock_send.call_args_list[1].args[2]
     assert spawn_payload["mode"] == "run"
 
 
 @patch("modal_uv.cli._ensure_deployment_with_notice")
+@patch("modal_uv.cli._tail_initial_output", return_value=7)
+@patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
+@patch("modal_uv.cli.send_request")
+@patch("modal_uv.cli.ensure_daemon")
+@patch("modal_uv.cli.build_manifest")
+def test_run_quick_completion_suppresses_hints_and_returns_remote_code(
+    mock_manifest: MagicMock,
+    mock_ensure: MagicMock,
+    mock_send: MagicMock,
+    mock_fp: MagicMock,
+    mock_tail: MagicMock,
+    mock_deploy: MagicMock,
+    tmp_path: Path,
+) -> None:
+    yaml_path = _write_yaml(tmp_path, 'app_name: "test-app"\n')
+    mock_manifest.return_value = []
+    mock_ensure.return_value = MagicMock()
+    mock_send.side_effect = [
+        {"status": "ok", "result": []},
+        {"status": "ok", "execution_id": "fc-fast"},
+    ]
+
+    result = runner.invoke(app, ["run", "--config", str(yaml_path), "--", "pytest"])
+
+    assert result.exit_code == 7
+    assert "Execution ID: fc-fast" in result.stdout
+    assert "Tailing output for 10 seconds..." in result.stdout
+    assert "Tail logs: modal-uv logs fc-fast" not in result.stdout
+    assert "Abort: modal-uv abort fc-fast" not in result.stdout
+    mock_tail.assert_called_once_with("test-app", "fc-fast")
+
+
+@patch("modal_uv.cli._ensure_deployment_with_notice")
+@patch("modal_uv.cli._tail_initial_output", return_value=0)
 @patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
 @patch("modal_uv.cli.send_request")
 @patch("modal_uv.cli.ensure_daemon")
@@ -102,6 +141,7 @@ def test_run_discovers_repo_root_from_nested_cwd(
     mock_ensure: MagicMock,
     mock_send: MagicMock,
     mock_fp: MagicMock,
+    mock_tail: MagicMock,
     mock_deploy: MagicMock,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -130,11 +170,13 @@ def test_run_discovers_repo_root_from_nested_cwd(
     assert result.exit_code == 0
     assert mock_manifest.call_args.args[0] == tmp_path
     assert mock_ensure.call_args.args == (config_path, tmp_path)
+    mock_tail.assert_called_once_with("test-app", "fc-nested")
     assert (tmp_path / ".modal-uv").is_dir()
     assert ".modal-uv/" in (tmp_path / ".gitignore").read_text(encoding="utf-8")
 
 
 @patch("modal_uv.cli._ensure_deployment_with_notice")
+@patch("modal_uv.cli._tail_initial_output", return_value=0)
 @patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
 @patch("modal_uv.cli.send_request")
 @patch("modal_uv.cli.ensure_daemon")
@@ -144,6 +186,7 @@ def test_run_passes_sync_ignore_to_manifest(
     mock_ensure: MagicMock,
     mock_send: MagicMock,
     mock_fp: MagicMock,
+    mock_tail: MagicMock,
     mock_deploy: MagicMock,
     tmp_path: Path,
 ) -> None:
@@ -171,6 +214,7 @@ def test_run_passes_sync_ignore_to_manifest(
     assert result.exit_code == 0
     tracking_config = mock_manifest.call_args.args[1]
     assert tracking_config.ignore == ("data/**",)
+    mock_tail.assert_called_once_with("test-app", "fc-ignore")
 
 
 @patch("modal_uv.cli._ensure_deployment_with_notice")
@@ -213,6 +257,7 @@ def test_run_fails_before_spawn_when_daemon_returns_error(
 
 
 @patch("modal_uv.cli._ensure_deployment_with_notice")
+@patch("modal_uv.cli._tail_initial_output", return_value=None)
 @patch("modal_uv.cli.stop_daemon")
 @patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
 @patch("modal_uv.cli.send_request")
@@ -224,6 +269,7 @@ def test_run_restarts_daemon_on_fingerprint_mismatch(
     mock_send: MagicMock,
     mock_fp: MagicMock,
     mock_stop: MagicMock,
+    mock_tail: MagicMock,
     mock_deploy: MagicMock,
     tmp_path: Path,
 ) -> None:
@@ -248,7 +294,9 @@ def test_run_restarts_daemon_on_fingerprint_mismatch(
 
     assert result.exit_code == 0
     assert "Execution ID: fc-restart" in result.stdout
+    assert "Execution took more than 10 seconds." in result.stdout
     assert "restarting daemon" in result.stderr
+    mock_tail.assert_called_once_with("test-app", "fc-restart")
     mock_stop.assert_called_once_with(tmp_path)
     assert mock_send.call_count == 3
     first_call = mock_send.call_args_list[0]
@@ -525,6 +573,7 @@ def test_verbose_flag_passed_to_deploy(
 
 
 @patch("modal_uv.cli._ensure_deployment_with_notice")
+@patch("modal_uv.cli._tail_initial_output", return_value=None)
 @patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
 @patch("modal_uv.cli.send_request")
 @patch("modal_uv.cli.ensure_daemon")
@@ -534,6 +583,7 @@ def test_exec_prints_spawned_execution_id_and_sends_exec_mode(
     mock_ensure: MagicMock,
     mock_send: MagicMock,
     mock_fp: MagicMock,
+    mock_tail: MagicMock,
     mock_deploy: MagicMock,
     tmp_path: Path,
 ) -> None:
@@ -558,14 +608,18 @@ def test_exec_prints_spawned_execution_id_and_sends_exec_mode(
 
     assert result.exit_code == 0
     assert "Execution ID: fc-exec" in result.stdout
+    assert "Tailing output for 10 seconds..." in result.stdout
+    assert "Execution took more than 10 seconds." in result.stdout
     assert "Tail logs: modal-uv logs fc-exec" in result.stdout
     assert "Abort: modal-uv abort fc-exec" in result.stdout
+    mock_tail.assert_called_once_with("test-app", "fc-exec")
     spawn_payload = mock_send.call_args_list[1].args[2]
     assert spawn_payload["mode"] == "exec"
     assert spawn_payload["args"] == ["nvidia-smi"]
 
 
 @patch("modal_uv.cli._ensure_deployment_with_notice")
+@patch("modal_uv.cli._tail_initial_output", return_value=0)
 @patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
 @patch("modal_uv.cli.send_request")
 @patch("modal_uv.cli.ensure_daemon")
@@ -575,6 +629,7 @@ def test_exec_shell_joins_multiple_tokens(
     mock_ensure: MagicMock,
     mock_send: MagicMock,
     mock_fp: MagicMock,
+    mock_tail: MagicMock,
     mock_deploy: MagicMock,
     tmp_path: Path,
 ) -> None:
@@ -593,9 +648,11 @@ def test_exec_shell_joins_multiple_tokens(
     assert result.exit_code == 0
     spawn_payload = mock_send.call_args_list[1].args[2]
     assert spawn_payload["args"] == [shell_join(["ls", "-la", "&&", "pwd"])]
+    mock_tail.assert_called_once_with("test-app", "fc-join")
 
 
 @patch("modal_uv.cli._ensure_deployment_with_notice")
+@patch("modal_uv.cli._tail_initial_output", return_value=0)
 @patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
 @patch("modal_uv.cli.send_request")
 @patch("modal_uv.cli.ensure_daemon")
@@ -605,6 +662,7 @@ def test_exec_preserves_single_shell_command_string(
     mock_ensure: MagicMock,
     mock_send: MagicMock,
     mock_fp: MagicMock,
+    mock_tail: MagicMock,
     mock_deploy: MagicMock,
     tmp_path: Path,
 ) -> None:
@@ -623,6 +681,40 @@ def test_exec_preserves_single_shell_command_string(
     assert result.exit_code == 0
     spawn_payload = mock_send.call_args_list[1].args[2]
     assert spawn_payload["args"] == ["python --version && nproc"]
+    mock_tail.assert_called_once_with("test-app", "fc-shell")
+
+
+@patch("modal_uv.cli._ensure_deployment_with_notice")
+@patch("modal_uv.cli._tail_initial_output", return_value=3)
+@patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
+@patch("modal_uv.cli.send_request")
+@patch("modal_uv.cli.ensure_daemon")
+@patch("modal_uv.cli.build_manifest")
+def test_exec_quick_completion_suppresses_hints_and_returns_remote_code(
+    mock_manifest: MagicMock,
+    mock_ensure: MagicMock,
+    mock_send: MagicMock,
+    mock_fp: MagicMock,
+    mock_tail: MagicMock,
+    mock_deploy: MagicMock,
+    tmp_path: Path,
+) -> None:
+    yaml_path = _write_yaml(tmp_path, 'app_name: "test-app"\n')
+    mock_manifest.return_value = []
+    mock_ensure.return_value = MagicMock()
+    mock_send.side_effect = [
+        {"status": "ok", "result": []},
+        {"status": "ok", "execution_id": "fc-exec-fast"},
+    ]
+
+    result = runner.invoke(app, ["exec", "--config", str(yaml_path), "--", "false"])
+
+    assert result.exit_code == 3
+    assert "Execution ID: fc-exec-fast" in result.stdout
+    assert "Tailing output for 10 seconds..." in result.stdout
+    assert "Tail logs: modal-uv logs fc-exec-fast" not in result.stdout
+    assert "Abort: modal-uv abort fc-exec-fast" not in result.stdout
+    mock_tail.assert_called_once_with("test-app", "fc-exec-fast")
 
 
 def test_exec_requires_command(tmp_path: Path) -> None:
@@ -753,6 +845,62 @@ def test_logs_tails_function_call_logs(
     )
     mock_fc_class.from_id.assert_called_once_with("fc-123")
     mock_fc_class.from_id.return_value.get.assert_called_once_with()
+    mock_process.terminate.assert_called_once_with()
+    mock_process.wait.assert_called_once_with(timeout=5)
+
+
+@patch("modal_uv.cli.subprocess")
+@patch("modal_uv.cli.time.sleep")
+@patch("modal.FunctionCall")
+def test_tail_initial_output_returns_code_when_execution_finishes_quickly(
+    mock_fc_class: MagicMock, mock_sleep: MagicMock, mock_subprocess: MagicMock
+) -> None:
+    from modal_uv.cli import _tail_initial_output
+
+    mock_process = MagicMock()
+    mock_process.poll.return_value = None
+    mock_subprocess.Popen.return_value = mock_process
+    mock_fc_class.from_id.return_value.get.return_value = 4
+
+    return_code = _tail_initial_output("test-app", "fc-fast")
+
+    assert return_code == 4
+    mock_subprocess.Popen.assert_called_once_with(
+        [
+            sys.executable,
+            "-m",
+            "modal",
+            "app",
+            "logs",
+            "test-app",
+            "--function-call",
+            "fc-fast",
+            "--follow",
+        ]
+    )
+    mock_fc_class.from_id.assert_called_once_with("fc-fast")
+    mock_fc_class.from_id.return_value.get.assert_called_once_with(timeout=10)
+    mock_sleep.assert_called_once_with(1)
+    mock_process.terminate.assert_called_once_with()
+    mock_process.wait.assert_called_once_with(timeout=5)
+
+
+@patch("modal.FunctionCall")
+@patch("modal_uv.cli.subprocess")
+def test_tail_initial_output_returns_none_when_execution_exceeds_window(
+    mock_subprocess: MagicMock, mock_fc_class: MagicMock
+) -> None:
+    from modal_uv.cli import _tail_initial_output
+
+    mock_process = MagicMock()
+    mock_process.poll.return_value = None
+    mock_subprocess.Popen.return_value = mock_process
+    mock_fc_class.from_id.return_value.get.side_effect = TimeoutError
+
+    return_code = _tail_initial_output("test-app", "fc-slow")
+
+    assert return_code is None
+    mock_fc_class.from_id.return_value.get.assert_called_once_with(timeout=10)
     mock_process.terminate.assert_called_once_with()
     mock_process.wait.assert_called_once_with(timeout=5)
 

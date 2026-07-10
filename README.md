@@ -117,7 +117,7 @@ Examples of generated files:
 
 ## Sync And Deployment
 
-`modal-uv run` and `modal-uv exec` scan local files, apply built-in ignores plus `sync.ignore`, ask the warm Modal container which files are missing or stale, upload only those files, spawn the execution, print the Modal function call ID, and return immediately.
+`modal-uv run` and `modal-uv exec` scan local files, apply built-in ignores plus `sync.ignore`, ask the warm Modal container which files are missing or stale, upload only those files, spawn the execution, print the Modal function call ID, and tail output for 10 seconds. If the execution finishes during that window, the CLI exits with the remote return code. Longer executions keep running asynchronously and print follow-up `logs` and `abort` commands.
 
 The detached daemon lazily ensures the Modal app is deployed before running work. It generates `.modal-uv/deployment.py` and redeploys when the deployment fingerprint changes. The fingerprint includes the deployment template, Modal-relevant config values, and the repo `pyproject.toml` SHA256 when present.
 

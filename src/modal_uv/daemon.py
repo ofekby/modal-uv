@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from modal_uv.config import load_config
-from modal_uv.deployment import ensure_deployment_current
+from modal_uv.deployment import daemon_fingerprint, ensure_deployment_current
 from modal_uv.paths import ensure_repo_state
 from modal_uv.sync import FilePayload, FileState, validate_relative_path
 
@@ -43,6 +43,7 @@ _worker: Any = None
 _repo_root: Path | None = None
 _app_name: str = ""
 _last_activity: float = 0.0
+_daemon_fingerprint: str = ""
 
 
 @asynccontextmanager
@@ -68,6 +69,13 @@ def ping() -> DaemonResponse:
     global _last_activity
     _last_activity = time.monotonic()
     return DaemonResponse(status="ok", result="pong")
+
+
+@app.get("/fingerprint")
+def fingerprint() -> DaemonResponse:
+    global _last_activity
+    _last_activity = time.monotonic()
+    return DaemonResponse(status="ok", result=_daemon_fingerprint)
 
 
 @app.post("/plan_sync")
@@ -144,13 +152,14 @@ def run_daemon_entry(config_path: Path, repo_root: Path) -> None:
 
     from modal_uv.paths import daemon_paths
 
-    global _worker, _repo_root, _app_name
+    global _worker, _repo_root, _app_name, _daemon_fingerprint
 
     config = load_config(config_path)
     ensure_repo_state(repo_root)
     pid_path, sock_path = daemon_paths(repo_root)
     _repo_root = repo_root
     _app_name = config.app_name
+    _daemon_fingerprint = daemon_fingerprint()
 
     if sock_path.exists():
         sock_path.unlink()

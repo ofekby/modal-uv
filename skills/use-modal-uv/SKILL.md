@@ -45,7 +45,7 @@ Local Repo -> daemon -> lazy deploy/check -> plan_sync.remote() -> sync_and_run.
 - `modal-uv` discovers the repo by walking up to `modal-uv.yaml`.
 - Repo-local generated state lives under `.modal-uv/`, which is gitignored.
 - Deployment (image build, fingerprint check) happens directly in the CLI before connecting to the daemon. The daemon handles file sync and command execution on the warm container.
-- `modal-uv run` and `modal-uv exec` print a Modal function call ID immediately and return.
+- `modal-uv run` and `modal-uv exec` print a Modal function call ID, tail output for 10 seconds, and only print follow-up logs/abort hints for longer executions.
 - Subprocess stdout/stderr go to Modal logs.
 - Modal authentication remains Modal's user-global authentication.
 
@@ -156,6 +156,7 @@ When you run `modal-uv run -- ...` or `modal-uv exec -- ...`, the daemon:
 3. The container compares against `.last-received-files-state.csv` and reports which files are missing or stale.
 4. Only those files are uploaded.
 5. `run` executes `uv run --link-mode copy ...`; `exec` executes the resolved remote shell directly.
+6. The CLI tails output for 10 seconds; quick executions return their remote exit code, while longer executions continue asynchronously with logs/abort hints.
 
 This is fast (seconds), incremental, and happens on every run. It covers:
 

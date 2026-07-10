@@ -14,6 +14,8 @@ from typing import Any
 from modal_uv.config import ModalUVConfig
 from modal_uv.paths import repo_state_dir
 
+DAEMON_PROTOCOL_VERSION = 1
+
 DEPLOYMENT_TEMPLATE = '''\
 """Generated modal-uv deployment. Do not edit by hand."""
 
@@ -150,6 +152,20 @@ def deployment_fingerprint(
         "pyproject_sha256": pyproject_sha256(repo_root),
         "modal_uv_source_sha256": source_hash,
         "tool_versions": dict(tool_versions or deployment_tool_versions()),
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def daemon_fingerprint(*, modal_uv_source_sha256: str | None = None) -> str:
+    """Return the compatibility fingerprint for the local CLI daemon."""
+    source_hash = modal_uv_source_sha256
+    if source_hash is None and is_local_install():
+        source_hash = compute_modal_uv_source_sha256()
+    payload = {
+        "protocol": DAEMON_PROTOCOL_VERSION,
+        "modal_uv_source_sha256": source_hash,
+        "tool_versions": deployment_tool_versions(),
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()

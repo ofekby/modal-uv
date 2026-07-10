@@ -34,6 +34,8 @@ app = typer.Typer(
     help="Run uv commands on Modal.com with GPU and direct file sync.",
 )
 
+_INITIAL_TAIL_SECONDS = 10
+
 
 @app.command()
 def run(
@@ -72,10 +74,7 @@ def run(
             _restart_attempted=False,
         )
 
-        typer.echo(f"Execution ID: {execution_id}")
-        typer.echo(f"Tail logs: modal-uv logs {execution_id}")
-        typer.echo(f"Abort: modal-uv abort {execution_id}")
-        raise SystemExit(0)
+        raise SystemExit(_report_spawned_execution(config.app_name, execution_id))
     except Exception as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise SystemExit(1) from exc
@@ -122,10 +121,7 @@ def exec_cmd(
             _restart_attempted=False,
         )
 
-        typer.echo(f"Execution ID: {execution_id}")
-        typer.echo(f"Tail logs: modal-uv logs {execution_id}")
-        typer.echo(f"Abort: modal-uv abort {execution_id}")
-        raise SystemExit(0)
+        raise SystemExit(_report_spawned_execution(config.app_name, execution_id))
     except Exception as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise SystemExit(1) from exc
@@ -172,15 +168,72 @@ def logs(
         typer.echo(f"Error waiting for function call: {exc}", err=True)
         raise SystemExit(1) from exc
     finally:
-        if process.poll() is None:
-            process.terminate()
-            try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
+        _terminate_process(process)
 
     raise SystemExit(return_code if isinstance(return_code, int) else 0)
+
+
+def _report_spawned_execution(app_name: str, execution_id: str) -> int:
+    typer.echo(f"Execution ID: {execution_id}")
+    typer.echo(f"Tailing output for {_INITIAL_TAIL_SECONDS} seconds...")
+    return_code = _tail_initial_output(app_name, execution_id)
+    if return_code is not None:
+        return return_code
+
+    typer.echo(f"Execution took more than {_INITIAL_TAIL_SECONDS} seconds.")
+    typer.echo(f"Tail logs: modal-uv logs {execution_id}")
+    typer.echo(f"Abort: modal-uv abort {execution_id}")
+    return 0
+
+
+def _tail_initial_output(app_name: str, execution_id: str) -> int | None:
+    import modal
+
+    process = _start_log_process(app_name, execution_id)
+    try:
+        return_code = modal.FunctionCall.from_id(execution_id).get(timeout=_INITIAL_TAIL_SECONDS)
+        time.sleep(1)
+    except _modal_timeout_errors(modal):
+        return None
+    finally:
+        _terminate_process(process)
+
+    return return_code if isinstance(return_code, int) else 0
+
+
+def _start_log_process(app_name: str, execution_id: str) -> subprocess.Popen[Any]:
+    return subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "modal",
+            "app",
+            "logs",
+            app_name,
+            "--function-call",
+            execution_id,
+            "--follow",
+        ]
+    )
+
+
+def _terminate_process(process: subprocess.Popen[Any]) -> None:
+    if process.poll() is not None:
+        return
+    process.terminate()
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
+
+
+def _modal_timeout_errors(modal_module: Any) -> tuple[type[BaseException], ...]:
+    exception_module = getattr(modal_module, "exception", None)
+    modal_timeout = getattr(exception_module, "TimeoutError", None)
+    if isinstance(modal_timeout, type) and issubclass(modal_timeout, BaseException):
+        return (TimeoutError, modal_timeout)
+    return (TimeoutError,)
 
 
 @app.command()

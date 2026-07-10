@@ -11,6 +11,7 @@ from pathlib import Path
 
 import httpx
 
+from modal_uv.deployment import daemon_fingerprint
 from modal_uv.paths import daemon_log_path, daemon_paths
 
 DAEMON_STARTUP_TIMEOUT = 10.0
@@ -20,13 +21,25 @@ REQUEST_TIMEOUT = 60.0
 def ensure_daemon(config_path: Path, repo_root: Path) -> httpx.Client:
     """Ensure a daemon is running and return an httpx client."""
     pid_path, sock_path = daemon_paths(repo_root)
+    expected_fingerprint = daemon_fingerprint()
 
     if not _daemon_alive(pid_path, sock_path):
         _spawn_daemon(config_path, repo_root)
         _wait_for_socket(sock_path)
 
-    transport = httpx.HTTPTransport(uds=str(sock_path))
-    return httpx.Client(transport=transport, timeout=REQUEST_TIMEOUT)
+    client = _daemon_client(sock_path)
+    if _daemon_matches_fingerprint(client, expected_fingerprint):
+        return client
+
+    client.close()
+    stop_daemon(repo_root)
+    _spawn_daemon(config_path, repo_root)
+    _wait_for_socket(sock_path)
+    client = _daemon_client(sock_path)
+    if not _daemon_matches_fingerprint(client, expected_fingerprint):
+        client.close()
+        raise RuntimeError("daemon fingerprint mismatch after restart")
+    return client
 
 
 def send_request(client: httpx.Client, path: str, request: dict) -> dict:
@@ -97,6 +110,21 @@ def _spawn_daemon(config_path: Path, repo_root: Path) -> None:
             stderr=subprocess.STDOUT,
             start_new_session=True,
         )
+
+
+def _daemon_client(sock_path: Path) -> httpx.Client:
+    transport = httpx.HTTPTransport(uds=str(sock_path))
+    return httpx.Client(transport=transport, timeout=REQUEST_TIMEOUT)
+
+
+def _daemon_matches_fingerprint(client: httpx.Client, expected_fingerprint: str) -> bool:
+    try:
+        resp = client.get("http://localhost/fingerprint")
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception:
+        return False
+    return data.get("status") == "ok" and data.get("result") == expected_fingerprint
 
 
 def _wait_for_socket(sock_path: Path) -> None:
