@@ -1,0 +1,7 @@
+.modal-uv/
+.venv/
+build/
+artifacts/
+hello
+*.o
+__pycache__/

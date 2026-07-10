@@ -113,6 +113,7 @@ def _read_payloads(missing_paths: list[str], manifest: list[FileState]) -> list[
                 size=state.size,
                 mtime_ns=state.mtime_ns,
                 content=source.read_bytes(),
+                mode=state.mode,
             )
         )
     return payloads

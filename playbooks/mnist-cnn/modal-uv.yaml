@@ -1,0 +1,28 @@
+app_name: "modal-uv-mnist-cnn"
+work_dir: "/tmp/work"
+
+volumes:
+  - name: "modal-uv-mnist-artifacts"
+    mount_path: "/mnt/artifacts"
+    commit_interval_seconds: 30
+
+env: {}
+
+runtime:
+  gpu: "T4"
+  cpu: 4
+  memory: 16384
+  scaledown_window_seconds: 300
+
+image:
+  base_image: "python:3.12-slim"
+
+sync:
+  ignore:
+    - ".venv/**"
+    - ".modal-uv/**"
+    - "data/**"
+    - "checkpoints/**"
+    - "artifacts/**"
+    - "*.pt"
+    - "*.json"

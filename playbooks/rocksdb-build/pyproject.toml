@@ -1,0 +1,9 @@
+[project]
+name = "modal-uv-playbook-rocksdb-build"
+version = "0.1.0"
+description = "Build RocksDB static library on Modal with modal-uv"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv]
+package = false

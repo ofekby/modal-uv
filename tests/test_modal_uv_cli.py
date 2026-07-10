@@ -431,6 +431,47 @@ def test_kill_app_containers_accepts_lowercase_modal_json_keys(
     assert stop_call.args[0][-1] == "ct-123"
 
 
+@patch("modal_uv.cli.subprocess")
+def test_kill_app_containers_uses_start_new_session(
+    mock_subprocess: MagicMock,
+) -> None:
+    from modal_uv.cli import _kill_app_containers
+
+    mock_subprocess.run.side_effect = [
+        MagicMock(
+            returncode=0,
+            stdout=json.dumps(
+                [{"description": "test-app", "state": "deployed", "app_id": "app-123"}]
+            ),
+        ),
+        MagicMock(
+            returncode=0,
+            stdout=json.dumps([{"container_id": "ct-123", "app_id": "app-123"}]),
+        ),
+        MagicMock(returncode=0, stdout="", stderr=""),
+    ]
+
+    _kill_app_containers("test-app")
+
+    for call in mock_subprocess.run.call_args_list:
+        assert call.kwargs.get("start_new_session") is True
+
+
+@patch("modal_uv.cli.subprocess")
+def test_kill_app_containers_surfaces_subprocess_errors(
+    mock_subprocess: MagicMock,
+) -> None:
+    import subprocess as sp
+
+    from modal_uv.cli import _kill_app_containers
+
+    mock_subprocess.run.side_effect = sp.TimeoutExpired(cmd="modal", timeout=15)
+    mock_subprocess.TimeoutExpired = sp.TimeoutExpired
+
+    with pytest.raises(sp.TimeoutExpired):
+        _kill_app_containers("test-app")
+
+
 @patch("modal_uv.cli.deploy_generated_artifact")
 @patch("modal_uv.cli.query_deployed_fingerprint")
 def test_no_deploy_when_fingerprint_matches(
@@ -552,6 +593,36 @@ def test_exec_shell_joins_multiple_tokens(
     assert result.exit_code == 0
     spawn_payload = mock_send.call_args_list[1].args[2]
     assert spawn_payload["args"] == [shell_join(["ls", "-la", "&&", "pwd"])]
+
+
+@patch("modal_uv.cli._ensure_deployment_with_notice")
+@patch("modal_uv.cli._compute_expected_fingerprint", return_value="expected-fp")
+@patch("modal_uv.cli.send_request")
+@patch("modal_uv.cli.ensure_daemon")
+@patch("modal_uv.cli.build_manifest")
+def test_exec_preserves_single_shell_command_string(
+    mock_manifest: MagicMock,
+    mock_ensure: MagicMock,
+    mock_send: MagicMock,
+    mock_fp: MagicMock,
+    mock_deploy: MagicMock,
+    tmp_path: Path,
+) -> None:
+    yaml_path = _write_yaml(tmp_path, 'app_name: "test-app"\n')
+    mock_manifest.return_value = []
+    mock_ensure.return_value = MagicMock()
+    mock_send.side_effect = [
+        {"status": "ok", "result": []},
+        {"status": "ok", "execution_id": "fc-shell"},
+    ]
+
+    result = runner.invoke(
+        app, ["exec", "--config", str(yaml_path), "--", "python --version && nproc"]
+    )
+
+    assert result.exit_code == 0
+    spawn_payload = mock_send.call_args_list[1].args[2]
+    assert spawn_payload["args"] == ["python --version && nproc"]
 
 
 def test_exec_requires_command(tmp_path: Path) -> None:

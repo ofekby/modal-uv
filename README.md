@@ -66,7 +66,6 @@ runtime:
   scaledown_window_seconds: 300
 
 image:
-  python_version: "3.12"
   base_image: "python:3.12-slim"
 
 sync:
@@ -99,8 +98,8 @@ Fields:
 - `runtime.memory`: Optional Modal memory request in MiB
 - `runtime.scaledown_window_seconds`: Modal worker scaledown window (default: `300`)
 - `runtime.exec`: Optional shell executable for `modal-uv exec`; if omitted, the remote Worker uses `$SHELL`, then `/bin/sh`
-- `image.python_version`: Python version (default: `3.12`)
 - `image.base_image`: Base Docker image (default: `python:3.12-slim`)
+- `image.add_python_version`: Required for non-Python base images; use `"inherit"` if the image already has Python, or a version like `"3.12"` to add Python via Modal's `add_python`
 - `sync.ignore`: gitignore-style patterns excluded from direct sync
 
 ## Repo-Local State
@@ -150,7 +149,10 @@ Run shell-style commands in the synced Modal work directory:
 ```bash
 modal-uv exec -- nvidia-smi
 modal-uv exec -- 'ls -la && pwd'
+modal-uv exec -- 'python --version && nproc'
 ```
+
+Quote command strings containing shell metacharacters such as `&&`, `|`, `>`, `<`, `*`, or variable expansions. Without quotes, your local shell may interpret those operators before `modal-uv` receives the command.
 
 Open Modal's native interactive shell through the passthrough command:
 

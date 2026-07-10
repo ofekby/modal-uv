@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 from pydantic_settings.sources import YamlConfigSettingsSource
 
@@ -35,8 +35,8 @@ class VolumeConfig:
 class ImageConfig:
     """Container image configuration."""
 
-    python_version: str
     base_image: str
+    add_python_version: str | None
 
 
 @dataclass(frozen=True)
@@ -90,7 +90,6 @@ ALLOWED_GPUS = frozenset(
 
 _DEFAULT_VOLUME_MOUNT = Path("/root/.cache")
 _DEFAULT_WORK_DIR = Path("/root/work")
-_DEFAULT_PYTHON_VERSION = "3.12"
 _DEFAULT_BASE_IMAGE = "python:3.12-slim"
 _DEFAULT_COMMIT_INTERVAL_SECONDS = 30
 _DEFAULT_SCALEDOWN_WINDOW_SECONDS = 300
@@ -111,11 +110,52 @@ class _RawVolume(BaseModel):
         return value
 
 
+KNOWN_PYTHON_IMAGE_PREFIXES = frozenset(
+    {
+        "python:",
+        "docker.io/library/python:",
+        "pytorch/pytorch:",
+        "continuumio/miniconda3:",
+        "continuumio/anaconda3:",
+    }
+)
+
+
+def _is_known_python_image(base_image: str) -> bool:
+    lowered = base_image.lower()
+    return any(lowered.startswith(prefix) for prefix in KNOWN_PYTHON_IMAGE_PREFIXES)
+
+
 class _RawImage(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    python_version: str = _DEFAULT_PYTHON_VERSION
+    python_version: str | None = None
+    add_python_version: str | None = None
     base_image: str = _DEFAULT_BASE_IMAGE
+
+    @model_validator(mode="after")
+    def validate_image_config(self) -> _RawImage:
+        if "python_version" in self.model_fields_set:
+            raise ValueError(
+                "python_version is removed; for known Python images like 'python:*' "
+                "remove this field entirely. For custom images, use 'add_python_version'."
+            )
+
+        if _is_known_python_image(self.base_image):
+            if self.add_python_version is not None:
+                raise ValueError(
+                    f"add_python_version is not needed for known Python image "
+                    f"'{self.base_image}'; remove it."
+                )
+        else:
+            if self.add_python_version is None:
+                raise ValueError(
+                    f"add_python_version is required for non-Python image "
+                    f"'{self.base_image}'. Use 'inherit' if the image already has "
+                    f"Python, or a version like '3.12' to add Python."
+                )
+
+        return self
 
 
 class _RawSync(BaseModel):
@@ -271,8 +311,8 @@ def load_config(config_path: Path | None = None) -> ModalUVConfig:
             exec=settings.runtime.exec,
         ),
         image=ImageConfig(
-            python_version=settings.image.python_version,
             base_image=settings.image.base_image,
+            add_python_version=settings.image.add_python_version,
         ),
         sync=SyncConfig(
             ignore=tuple(item.strip() for item in settings.sync.ignore if item.strip())

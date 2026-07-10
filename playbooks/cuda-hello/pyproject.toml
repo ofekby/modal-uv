@@ -1,0 +1,9 @@
+[project]
+name = "modal-uv-playbook-cuda-hello"
+version = "0.1.0"
+description = "Compile and run CUDA hello world on Modal with modal-uv"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv]
+package = false

@@ -48,6 +48,7 @@ def create_app(
     runtime_exec: str | None,
     work_dir: str,
     image_base: str,
+    add_python_version: str | None,
     fingerprint: str,
 ) -> modal.App:
     """Create a Modal app from config."""
@@ -60,8 +61,12 @@ def create_app(
 
     merged_env = {**_INFRA_ENV, **env}
 
+    image_kwargs: dict[str, Any] = {}
+    if add_python_version and add_python_version != "inherit":
+        image_kwargs["add_python"] = add_python_version
+
     image = (
-        modal.Image.from_registry(image_base)
+        modal.Image.from_registry(image_base, **image_kwargs)
         .apt_install("curl")
         .run_commands("curl -LsSf https://astral.sh/uv/install.sh | sh")
         .pip_install("pathspec")

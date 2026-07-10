@@ -1,0 +1,8 @@
+.modal-uv/
+.venv/
+rocksdb/
+build/
+artifacts/
+*.a
+*.o
+__pycache__/

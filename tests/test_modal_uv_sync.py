@@ -89,6 +89,12 @@ def test_uv_run_env_adds_src_to_pythonpath(tmp_path: Path) -> None:
     assert env["PYTHONPATH"] == f"{tmp_path / 'src'}:/existing"
 
 
+def test_uv_run_env_forces_project_virtualenv_inside_work_dir(tmp_path: Path) -> None:
+    env = uv_run_env(tmp_path, {"UV_PROJECT_ENVIRONMENT": "/usr/local"})
+
+    assert env["UV_PROJECT_ENVIRONMENT"] == str(tmp_path / ".venv")
+
+
 def test_state_csv_round_trips_paths_size_and_mtime(tmp_path: Path) -> None:
     path = tmp_path / "state.csv"
     state = [
@@ -140,6 +146,7 @@ def test_file_payload_writes_bytes_and_preserves_state(tmp_path: Path) -> None:
         size=5,
         mtime_ns=1_700_000_000_000_000_000,
         content=b"hello",
+        mode=0o644,
     )
 
     payload.write_to(tmp_path)
@@ -148,3 +155,68 @@ def test_file_payload_writes_bytes_and_preserves_state(tmp_path: Path) -> None:
     assert written.read_bytes() == b"hello"
     assert written.stat().st_size == 5
     assert written.stat().st_mtime_ns == payload.mtime_ns
+
+
+def test_file_payload_preserves_executable_mode(tmp_path: Path) -> None:
+    payload = FilePayload(
+        path="scripts/run.sh",
+        size=10,
+        mtime_ns=1_700_000_000_000_000_000,
+        content=b"#!/bin/sh\n",
+        mode=0o755,
+    )
+
+    payload.write_to(tmp_path)
+
+    written = tmp_path / "scripts/run.sh"
+    assert written.stat().st_mode & 0o777 == 0o755
+
+
+def test_build_manifest_captures_file_mode(tmp_path: Path) -> None:
+    script = tmp_path / "scripts/run.sh"
+    _write(script, "#!/bin/sh\necho hi\n")
+    script.chmod(0o755)
+
+    manifest = build_manifest(tmp_path, _config())
+
+    entry = next(item for item in manifest if item.path == "scripts/run.sh")
+    assert entry.mode & 0o111  # executable bits set
+
+
+def test_state_csv_round_trips_mode(tmp_path: Path) -> None:
+    path = tmp_path / "state.csv"
+    state = [
+        FileState(path="src/a.py", size=10, mtime_ns=100, mode=0o644),
+        FileState(path="scripts/run.sh", size=20, mtime_ns=200, mode=0o755),
+    ]
+
+    save_state_csv(path, state)
+
+    assert load_state_csv(path) == state
+
+
+def test_load_state_csv_handles_missing_mode_column(tmp_path: Path) -> None:
+    path = tmp_path / "old_state.csv"
+    path.write_text("path,size,mtime_ns\nsrc/a.py,10,100\n", encoding="utf-8")
+
+    result = load_state_csv(path)
+
+    assert len(result) == 1
+    assert result[0].path == "src/a.py"
+    assert result[0].mode == 0
+
+
+def test_plan_sync_detects_mode_change(tmp_path: Path) -> None:
+    work_dir = tmp_path / "work"
+    _write(work_dir / "run.sh", "echo hi")
+    save_state_csv(
+        work_dir / ".last-received-files-state.csv",
+        [FileState(path="run.sh", size=6, mtime_ns=1, mode=0o644)],
+    )
+
+    missing = plan_sync(
+        work_dir,
+        [FileState(path="run.sh", size=6, mtime_ns=1, mode=0o755)],
+    )
+
+    assert "run.sh" in missing

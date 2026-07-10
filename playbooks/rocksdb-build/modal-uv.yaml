@@ -1,0 +1,27 @@
+app_name: "modal-uv-rocksdb-build"
+work_dir: "/tmp/work"
+
+volumes:
+  - name: "modal-uv-rocksdb-artifacts"
+    mount_path: "/mnt/artifacts"
+    commit_interval_seconds: 30
+
+env: {}
+
+runtime:
+  cpu: 64
+  memory: 131072
+  scaledown_window_seconds: 300
+
+image:
+  base_image: "python:3.12-slim"
+
+sync:
+  ignore:
+    - ".venv/**"
+    - ".modal-uv/**"
+    - "rocksdb/**"
+    - "build/**"
+    - "artifacts/**"
+    - "*.a"
+    - "*.o"

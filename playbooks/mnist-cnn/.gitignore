@@ -1,0 +1,8 @@
+.modal-uv/
+.venv/
+data/
+checkpoints/
+artifacts/
+*.pt
+*.json
+__pycache__/

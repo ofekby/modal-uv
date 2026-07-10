@@ -37,6 +37,7 @@ class FileState:
     path: str
     size: int
     mtime_ns: int
+    mode: int = 0
 
 
 @dataclass(frozen=True)
@@ -45,11 +46,13 @@ class FilePayload:
     size: int
     mtime_ns: int
     content: bytes
+    mode: int = 0o644
 
     def write_to(self, root: Path) -> None:
         destination = safe_join(root, self.path)
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(self.content)
+        os.chmod(destination, self.mode)
         if destination.stat().st_size != self.size:
             raise ValueError(f"size mismatch for {self.path}")
         os.utime(destination, ns=(self.mtime_ns, self.mtime_ns))
@@ -64,6 +67,7 @@ def build_manifest(repo_root: Path, config: TrackingConfig) -> list[FileState]:
                 path=relative_path.as_posix(),
                 size=stat.st_size,
                 mtime_ns=stat.st_mtime_ns,
+                mode=stat.st_mode & 0o777,
             )
         )
     return manifest
@@ -78,6 +82,7 @@ def uv_run_env(work_dir: Path, base_env: dict[str, str] | None = None) -> dict[s
     src_path = str(work_dir / "src")
     existing_pythonpath = env.get("PYTHONPATH")
     env["PYTHONPATH"] = f"{src_path}:{existing_pythonpath}" if existing_pythonpath else src_path
+    env["UV_PROJECT_ENVIRONMENT"] = str(work_dir / ".venv")
     return env
 
 
@@ -139,6 +144,7 @@ def load_state_csv(path: Path) -> list[FileState]:
                 path=str(row["path"]),
                 size=int(row["size"]),
                 mtime_ns=int(row["mtime_ns"]),
+                mode=int(row.get("mode") or 0),
             )
             for row in reader
         ]
@@ -147,11 +153,16 @@ def load_state_csv(path: Path) -> list[FileState]:
 def save_state_csv(path: Path, state: list[FileState]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as file:
-        writer = csv.DictWriter(file, fieldnames=["path", "size", "mtime_ns"])
+        writer = csv.DictWriter(file, fieldnames=["path", "size", "mtime_ns", "mode"])
         writer.writeheader()
         for item in state:
             writer.writerow(
-                {"path": item.path, "size": str(item.size), "mtime_ns": str(item.mtime_ns)}
+                {
+                    "path": item.path,
+                    "size": str(item.size),
+                    "mtime_ns": str(item.mtime_ns),
+                    "mode": str(item.mode),
+                }
             )
 
 
@@ -182,6 +193,7 @@ def plan_sync(work_dir: Path, manifest: list[FileState]) -> list[str]:
             previous_item is None
             or previous_item.size != item.size
             or previous_item.mtime_ns != item.mtime_ns
+            or previous_item.mode != item.mode
         ):
             missing.append(item.path)
     compare = time.monotonic() - t

@@ -1,0 +1,28 @@
+app_name: "modal-uv-cuda-hello"
+work_dir: "/tmp/work"
+
+volumes:
+  - name: "modal-uv-cuda-hello-artifacts"
+    mount_path: "/mnt/artifacts"
+    commit_interval_seconds: 30
+
+env: {}
+
+runtime:
+  gpu: "T4"
+  cpu: 4
+  memory: 16384
+  scaledown_window_seconds: 300
+
+image:
+  base_image: "nvidia/cuda:12.4.0-devel-ubuntu22.04"
+  add_python_version: "3.12"
+
+sync:
+  ignore:
+    - ".venv/**"
+    - ".modal-uv/**"
+    - "build/**"
+    - "artifacts/**"
+    - "hello"
+    - "*.o"

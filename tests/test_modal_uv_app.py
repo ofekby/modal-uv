@@ -24,6 +24,7 @@ def _make_config() -> dict[str, Any]:
         "env": {},
         "work_dir": "/tmp/work",
         "image_base": "python:3.12-slim",
+        "add_python_version": None,
         "scaledown_window_seconds": 120,
         "runtime_exec": None,
         "fingerprint": "abc123",

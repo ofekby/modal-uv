@@ -112,10 +112,11 @@ def exec_cmd(
         manifest = build_manifest(project.repo_root, _load_tracking_config(config))
         expected_fp = _compute_expected_fingerprint(config, project.repo_root)
 
+        command = exec_args[0] if len(exec_args) == 1 else shlex.join(exec_args)
         execution_id = _sync_and_spawn(
             project,
             manifest,
-            [shlex.join(exec_args)],
+            [command],
             expected_fp,
             mode="exec",
             _restart_attempted=False,
@@ -538,7 +539,6 @@ runtime:
   scaledown_window_seconds: 300
 
 image:
-  python_version: "3.12"
   base_image: "python:3.12-slim"
 
 sync:
@@ -660,46 +660,46 @@ def _ensure_deployment_with_notice(
 
 def _kill_app_containers(app_name: str) -> None:
     """Stop all running containers for an app to flush stale versions."""
-    try:
-        app_result = subprocess.run(
-            [sys.executable, "-m", "modal", "app", "list", "--json"],
-            capture_output=True,
-            text=True,
-            timeout=15,
-        )
-        if app_result.returncode != 0:
-            return
-        apps = json.loads(app_result.stdout)
-        app_id = next(
-            (
-                _json_value(a, "App ID", "app_id")
-                for a in apps
-                if _json_value(a, "Description", "description") == app_name
-            ),
-            None,
-        )
-        if app_id is None:
-            return
+    app_result = subprocess.run(
+        [sys.executable, "-m", "modal", "app", "list", "--json"],
+        capture_output=True,
+        text=True,
+        timeout=15,
+        start_new_session=True,
+    )
+    if app_result.returncode != 0:
+        return
+    apps = json.loads(app_result.stdout)
+    app_id = next(
+        (
+            _json_value(a, "App ID", "app_id")
+            for a in apps
+            if _json_value(a, "Description", "description") == app_name
+        ),
+        None,
+    )
+    if app_id is None:
+        return
 
-        ctr_result = subprocess.run(
-            [sys.executable, "-m", "modal", "container", "list", "--app-id", app_id, "--json"],
-            capture_output=True,
-            text=True,
-            timeout=15,
-        )
-        if ctr_result.returncode != 0:
-            return
-        containers = json.loads(ctr_result.stdout)
-        for ctr in containers:
-            ctr_id = _json_value(ctr, "Container ID", "container_id")
-            if ctr_id:
-                subprocess.run(
-                    [sys.executable, "-m", "modal", "container", "stop", "-y", ctr_id],
-                    capture_output=True,
-                    timeout=15,
-                )
-    except Exception:
-        pass
+    ctr_result = subprocess.run(
+        [sys.executable, "-m", "modal", "container", "list", "--app-id", app_id, "--json"],
+        capture_output=True,
+        text=True,
+        timeout=15,
+        start_new_session=True,
+    )
+    if ctr_result.returncode != 0:
+        return
+    containers = json.loads(ctr_result.stdout)
+    for ctr in containers:
+        ctr_id = _json_value(ctr, "Container ID", "container_id")
+        if ctr_id:
+            subprocess.run(
+                [sys.executable, "-m", "modal", "container", "stop", "-y", ctr_id],
+                capture_output=True,
+                timeout=15,
+                start_new_session=True,
+            )
 
 
 def _wait_for_deployment_ready(

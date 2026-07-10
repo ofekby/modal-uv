@@ -131,7 +131,6 @@ def test_full_yaml(tmp_path: Path) -> None:
           scaledown_window_seconds: 120
 
         image:
-          python_version: "3.11"
           base_image: "python:3.11-slim"
 
         sync:
@@ -149,7 +148,7 @@ def test_full_yaml(tmp_path: Path) -> None:
     assert config.runtime.cpu == 2.5
     assert config.runtime.memory == 4096
     assert config.runtime.scaledown_window_seconds == 120
-    assert config.image.python_version == "3.11"
+    assert config.image.add_python_version is None
     assert config.image.base_image == "python:3.11-slim"
     assert config.sync.ignore == ("data/**", "*.ckpt")
 
@@ -219,7 +218,7 @@ def test_defaults_applied(tmp_path: Path) -> None:
     assert config.runtime.memory is None
     assert config.work_dir == Path("/root/work")
     assert config.volumes[0].mount_path == Path("/root/.cache")
-    assert config.image.python_version == "3.12"
+    assert config.image.add_python_version is None
     assert config.image.base_image == "python:3.12-slim"
     assert config.sync.ignore == ()
     assert config.volumes[0].commit_interval_seconds == 30
@@ -406,3 +405,101 @@ def test_runtime_memory_must_be_positive(tmp_path: Path) -> None:
 
     with pytest.raises(ConfigError, match="memory"):
         load_config(path)
+
+
+def test_python_version_field_raises_error(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        image:
+          python_version: "3.12"
+          base_image: "python:3.12-slim"
+        """,
+    )
+
+    with pytest.raises(ConfigError, match="python_version"):
+        load_config(path)
+
+
+def test_known_python_image_does_not_require_add_python(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        image:
+          base_image: "python:3.12-slim"
+        """,
+    )
+    config = load_config(path)
+    assert config.image.add_python_version is None
+
+
+def test_known_python_image_rejects_add_python_version(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        image:
+          base_image: "python:3.12-slim"
+          add_python_version: "3.12"
+        """,
+    )
+
+    with pytest.raises(ConfigError, match="add_python_version"):
+        load_config(path)
+
+
+def test_pytorch_image_treated_as_known_python(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        image:
+          base_image: "pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime"
+        """,
+    )
+    config = load_config(path)
+    assert config.image.add_python_version is None
+
+
+def test_unknown_image_requires_add_python_version(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        image:
+          base_image: "nvidia/cuda:12.4.0-devel-ubuntu22.04"
+        """,
+    )
+
+    with pytest.raises(ConfigError, match="add_python_version"):
+        load_config(path)
+
+
+def test_unknown_image_with_inherit_add_python(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        image:
+          base_image: "my-custom/image:latest"
+          add_python_version: "inherit"
+        """,
+    )
+    config = load_config(path)
+    assert config.image.add_python_version == "inherit"
+
+
+def test_unknown_image_with_semver_add_python(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        image:
+          base_image: "nvidia/cuda:12.4.0-devel-ubuntu22.04"
+          add_python_version: "3.12"
+        """,
+    )
+    config = load_config(path)
+    assert config.image.add_python_version == "3.12"

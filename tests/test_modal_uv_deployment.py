@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.metadata
 from pathlib import Path
 from textwrap import dedent
 from unittest.mock import MagicMock, patch
@@ -13,6 +14,7 @@ from modal_uv.deployment import (
     deployment_fingerprint,
     deployment_parameters,
     ensure_deployment_current,
+    is_local_install,
     load_deployment_template,
     pyproject_sha256,
     query_deployed_fingerprint,
@@ -45,7 +47,6 @@ def _config(tmp_path: Path):
           memory: 2048
           scaledown_window_seconds: 120
         image:
-          python_version: "3.12"
           base_image: "python:3.12-slim"
         sync:
           ignore:
@@ -88,7 +89,7 @@ def test_deployment_parameters_exclude_sync_ignore(tmp_path: Path) -> None:
             "scaledown_window_seconds": 120,
             "exec": None,
         },
-        "image": {"python_version": "3.12", "base_image": "python:3.12-slim"},
+        "image": {"base_image": "python:3.12-slim", "add_python_version": None},
     }
 
 
@@ -176,6 +177,75 @@ def test_deployment_fingerprint_changes_when_tool_versions_change(tmp_path: Path
     )
 
     assert first != second
+
+
+def test_deployment_fingerprint_changes_when_modal_uv_source_changes(tmp_path: Path) -> None:
+    config = _config(tmp_path)
+    params = deployment_parameters(config)
+
+    first = deployment_fingerprint(
+        "template",
+        params,
+        tmp_path,
+        modal_uv_source_sha256="source-a",
+    )
+    second = deployment_fingerprint(
+        "template",
+        params,
+        tmp_path,
+        modal_uv_source_sha256="source-b",
+    )
+
+    assert first != second
+
+
+def test_is_local_install_true_for_file_url() -> None:
+    dist = MagicMock()
+    dist.read_text.return_value = (
+        '{"url":"file:///home/ofek/repos/modal-uv","dir_info":{"editable":true}}'
+    )
+
+    with patch("modal_uv.deployment.importlib.metadata.distribution", return_value=dist):
+        assert is_local_install() is True
+
+
+def test_is_local_install_false_for_pypi_url() -> None:
+    dist = MagicMock()
+    dist.read_text.return_value = '{"url":"https://files.pythonhosted.org/packages/..."}'
+
+    with patch("modal_uv.deployment.importlib.metadata.distribution", return_value=dist):
+        assert is_local_install() is False
+
+
+def test_is_local_install_false_when_no_direct_url() -> None:
+    dist = MagicMock()
+    dist.read_text.return_value = None
+
+    with patch("modal_uv.deployment.importlib.metadata.distribution", return_value=dist):
+        assert is_local_install() is False
+
+
+def test_is_local_install_true_when_package_missing() -> None:
+    with patch(
+        "modal_uv.deployment.importlib.metadata.distribution",
+        side_effect=importlib.metadata.PackageNotFoundError,
+    ):
+        assert is_local_install() is True
+
+
+@patch("modal_uv.deployment.is_local_install", return_value=False)
+def test_fingerprint_excludes_source_hash_when_not_local(
+    mock_local: MagicMock,
+    tmp_path: Path,
+) -> None:
+    config = _config(tmp_path)
+    params = deployment_parameters(config)
+
+    first = deployment_fingerprint("template", params, tmp_path)
+    second = deployment_fingerprint("template", params, tmp_path)
+
+    assert first == second
+    mock_local.assert_called()
 
 
 def test_missing_pyproject_hash_is_deterministic(tmp_path: Path) -> None:
