@@ -53,6 +53,7 @@ class RuntimeConfig:
     gpu: str | None
     cpu: float | None
     memory: int | None
+    timeout_seconds: int
     scaledown_window_seconds: int
     exec: str | None
 
@@ -92,6 +93,7 @@ _DEFAULT_VOLUME_MOUNT = Path("/root/.cache")
 _DEFAULT_WORK_DIR = Path("/root/work")
 _DEFAULT_BASE_IMAGE = "python:3.12-slim"
 _DEFAULT_COMMIT_INTERVAL_SECONDS = 30
+_DEFAULT_TIMEOUT_SECONDS = 3600
 _DEFAULT_SCALEDOWN_WINDOW_SECONDS = 300
 
 
@@ -170,6 +172,7 @@ class _RawRuntime(BaseModel):
     gpu: str | None = None
     cpu: float | None = None
     memory: int | None = None
+    timeout_seconds: int = _DEFAULT_TIMEOUT_SECONDS
     scaledown_window_seconds: int = _DEFAULT_SCALEDOWN_WINDOW_SECONDS
     exec: str | None = None
 
@@ -197,6 +200,13 @@ class _RawRuntime(BaseModel):
     def validate_memory(cls, value: int | None) -> int | None:
         if value is not None and value <= 0:
             raise ValueError("memory must be greater than 0")
+        return value
+
+    @field_validator("timeout_seconds")
+    @classmethod
+    def validate_timeout_seconds(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("timeout_seconds must be greater than 0")
         return value
 
     @field_validator("scaledown_window_seconds")
@@ -307,6 +317,7 @@ def load_config(config_path: Path | None = None) -> ModalUVConfig:
             gpu=settings.runtime.gpu,
             cpu=settings.runtime.cpu,
             memory=settings.runtime.memory,
+            timeout_seconds=settings.runtime.timeout_seconds,
             scaledown_window_seconds=settings.runtime.scaledown_window_seconds,
             exec=settings.runtime.exec,
         ),

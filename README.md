@@ -60,9 +60,7 @@ volumes:
 env: {}
 
 runtime:
-  gpu: "T4"
-  cpu: 2
-  memory: 4096
+  timeout_seconds: 3600
   scaledown_window_seconds: 300
 
 image:
@@ -93,9 +91,11 @@ Fields:
 - `volumes[].mount_path`: Mount path in the container (default: `/root/.cache`)
 - `volumes[].commit_interval_seconds`: Periodic Modal Volume commit interval while a command runs (default: `30`)
 - `env`: Extra container environment variables merged over modal-uv defaults
+- `runtime`: Optional Modal runtime settings; omit the section or individual fields to use defaults
 - `runtime.gpu`: Optional GPU type, such as `T4`, `A10G`, `A100`, `H100`, or `L4`; omit for CPU-only containers
 - `runtime.cpu`: Optional Modal CPU request
 - `runtime.memory`: Optional Modal memory request in MiB
+- `runtime.timeout_seconds`: Modal Function execution timeout in seconds (default: `3600`)
 - `runtime.scaledown_window_seconds`: Modal worker scaledown window (default: `300`)
 - `runtime.exec`: Optional shell executable for `modal-uv exec`; if omitted, the remote Worker uses `$SHELL`, then `/bin/sh`
 - `image.base_image`: Base Docker image (default: `python:3.12-slim`)

@@ -128,6 +128,7 @@ def test_full_yaml(tmp_path: Path) -> None:
           gpu: "A100"
           cpu: 2.5
           memory: 4096
+          timeout_seconds: 1800
           scaledown_window_seconds: 120
 
         image:
@@ -147,6 +148,7 @@ def test_full_yaml(tmp_path: Path) -> None:
     assert config.runtime.gpu == "A100"
     assert config.runtime.cpu == 2.5
     assert config.runtime.memory == 4096
+    assert config.runtime.timeout_seconds == 1800
     assert config.runtime.scaledown_window_seconds == 120
     assert config.image.add_python_version is None
     assert config.image.base_image == "python:3.11-slim"
@@ -216,6 +218,7 @@ def test_defaults_applied(tmp_path: Path) -> None:
     assert config.runtime.gpu is None
     assert config.runtime.cpu is None
     assert config.runtime.memory is None
+    assert config.runtime.timeout_seconds == 3600
     assert config.work_dir == Path("/root/work")
     assert config.volumes[0].mount_path == Path("/root/.cache")
     assert config.image.add_python_version is None
@@ -292,6 +295,20 @@ def test_scaledown_window_seconds_must_be_positive(tmp_path: Path) -> None:
     )
 
     with pytest.raises(ConfigError, match="scaledown_window_seconds"):
+        load_config(path)
+
+
+def test_timeout_seconds_must_be_positive(tmp_path: Path) -> None:
+    path = _write_yaml(
+        tmp_path,
+        """\
+        app_name: "test-app"
+        runtime:
+          timeout_seconds: 0
+        """,
+    )
+
+    with pytest.raises(ConfigError, match="timeout_seconds"):
         load_config(path)
 
 

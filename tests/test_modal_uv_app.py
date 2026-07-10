@@ -25,6 +25,7 @@ def _make_config() -> dict[str, Any]:
         "work_dir": "/tmp/work",
         "image_base": "python:3.12-slim",
         "add_python_version": None,
+        "timeout_seconds": 1800,
         "scaledown_window_seconds": 120,
         "runtime_exec": None,
         "fingerprint": "abc123",
@@ -159,6 +160,16 @@ def test_create_app_uses_scaledown_window(mock_modal: MagicMock) -> None:
 
     cls_kwargs = mock_app.cls.call_args.kwargs
     assert cls_kwargs["scaledown_window"] == 120
+
+
+@patch("modal_uv.app.modal")
+def test_create_app_uses_timeout(mock_modal: MagicMock) -> None:
+    mock_app = _setup_mocks(mock_modal)
+
+    create_app(**_make_config())
+
+    cls_kwargs = mock_app.cls.call_args.kwargs
+    assert cls_kwargs["timeout"] == 1800
 
 
 @patch("modal_uv.app.modal")

@@ -535,7 +535,7 @@ volumes:
 env: {{}}
 
 runtime:
-  gpu: "T4"
+  timeout_seconds: 3600
   scaledown_window_seconds: 300
 
 image:

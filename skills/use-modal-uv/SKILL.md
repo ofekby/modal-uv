@@ -67,9 +67,7 @@ volumes:
 env: {}
 
 runtime:
-  gpu: "T4"
-  cpu: 2
-  memory: 4096
+  timeout_seconds: 3600
   scaledown_window_seconds: 300
 
 image:

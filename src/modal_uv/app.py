@@ -44,6 +44,7 @@ def create_app(
     memory: int | None,
     volumes: list[dict[str, Any]],
     env: dict[str, str],
+    timeout_seconds: int,
     scaledown_window_seconds: int,
     runtime_exec: str | None,
     work_dir: str,
@@ -85,7 +86,7 @@ def create_app(
 
     cls_options: dict[str, Any] = {
         "scaledown_window": scaledown_window_seconds,
-        "timeout": 7200,
+        "timeout": timeout_seconds,
         "max_containers": 1,
         "image": image,
         "serialized": True,

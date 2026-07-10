@@ -991,9 +991,10 @@ def test_init_creates_default_config_when_missing(
     assert "app_name:" in content
     assert tmp_path.name in content
     assert "runtime:" in content
-    assert 'gpu: "T4"' in content
+    assert "gpu:" not in content
     assert "cpu:" not in content
     assert "memory:" not in content
+    assert "timeout_seconds: 3600" in content
     assert "scaledown_window_seconds: 300" in content
     assert "exec:" not in content
     assert (tmp_path / ".modal-uv").is_dir()

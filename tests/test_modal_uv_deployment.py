@@ -45,6 +45,7 @@ def _config(tmp_path: Path):
           gpu: "T4"
           cpu: 2
           memory: 2048
+          timeout_seconds: 1800
           scaledown_window_seconds: 120
         image:
           base_image: "python:3.12-slim"
@@ -86,6 +87,7 @@ def test_deployment_parameters_exclude_sync_ignore(tmp_path: Path) -> None:
             "gpu": "T4",
             "cpu": 2.0,
             "memory": 2048,
+            "timeout_seconds": 1800,
             "scaledown_window_seconds": 120,
             "exec": None,
         },
@@ -309,6 +311,17 @@ def test_render_deployment_embeds_scaledown_window(tmp_path: Path) -> None:
     rendered = render_deployment(template, params, fingerprint)
 
     assert "scaledown_window_seconds=120" in rendered
+
+
+def test_render_deployment_embeds_timeout(tmp_path: Path) -> None:
+    config = _config(tmp_path)
+    params = deployment_parameters(config)
+    template = load_deployment_template()
+    fingerprint = deployment_fingerprint(template, params, tmp_path)
+
+    rendered = render_deployment(template, params, fingerprint)
+
+    assert "timeout_seconds=1800" in rendered
 
 
 def test_render_deployment_embeds_runtime_resources(tmp_path: Path) -> None:
