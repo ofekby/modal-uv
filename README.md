@@ -1,7 +1,7 @@
-# modal-uv
+# modal-uv - Local dev loop, Modal compute
 
 <p align="center">
-  <img src="docs/assets/modal-uv-banner.svg" alt="modal-uv — local dev loop, Modal compute">
+  <img src="docs/assets/modal-uv-banner.svg" alt="modal-uv - Local dev loop, Modal compute">
 </p>
 
 <p align="center">
