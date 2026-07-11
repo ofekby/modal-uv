@@ -1,6 +1,10 @@
 # modal-uv
 
 <p align="center">
+  <img src="docs/assets/modal-uv-banner.svg" alt="modal-uv — local dev loop, Modal compute">
+</p>
+
+<p align="center">
   <a href="https://github.com/ofekby/modal-uv/actions/workflows/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/ofekby/modal-uv/ci.yml?branch=main&style=for-the-badge" alt="CI status"></a>
   <a href="https://pypi.org/project/modal-uv/"><img src="https://img.shields.io/pypi/v/modal-uv?style=for-the-badge" alt="PyPI release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
