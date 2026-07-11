@@ -31,15 +31,17 @@
   <path d="M1220 89C1081 164 1064 316 872 306C729 299 694 182 555 191C378 203 333 332 119 350" stroke="#DE5FE9" stroke-opacity="0.16" stroke-width="2"/>
   <circle cx="242" cy="174" r="116" fill="#7BFFB2" opacity="0.08" filter="url(#softGlow)"/>
 
-  <g transform="translate(106 54)">
-    <path d="M63 44C66 30 80 22 93 27L124 39C134 43 141 53 141 64V159C141 171 130 179 119 175L89 164C79 160 72 151 72 140V93L55 171C52 185 38 193 25 188L-4 177C-16 172 -17 155 -6 148L25 158L63 44Z" fill="url(#modalMint)"/>
-    <path d="M167 44C170 30 184 22 197 27L228 39C238 43 245 53 245 64V159C245 171 234 179 223 175L193 164C183 160 176 151 176 140V93L159 171C156 185 142 193 129 188L100 177C88 172 87 155 98 148L129 158L167 44Z" fill="url(#logoPurple)"/>
-    <path d="M93 27L124 39C134 43 141 53 141 64V159C141 171 130 179 119 175L89 164C79 160 72 151 72 140V93L93 27Z" fill="#D7FF64" opacity="0.24"/>
-    <path d="M197 27L228 39C238 43 245 53 245 64V159C245 171 234 179 223 175L193 164C183 160 176 151 176 140V93L197 27Z" fill="#0F0F0F" opacity="0.16"/>
+  <g transform="translate(116 52)">
+    <text x="18" y="142" fill="#DE5FE9" fill-opacity="0.38" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="150" font-weight="900" letter-spacing="-10">M</text>
+    <text x="0" y="130" fill="url(#modalMint)" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="150" font-weight="900" letter-spacing="-10">M</text>
+    <path d="M22 34L42 46L42 136L22 130Z" fill="#D7FF64" opacity="0.22"/>
+    <path d="M162 42L181 54L181 144L162 136Z" fill="#0F0F0F" opacity="0.18"/>
 
-    <path d="M69 202C71 189 84 181 96 185L125 195C135 198 142 208 142 219V249C142 260 149 270 160 273C171 270 178 260 178 249V201C178 189 190 181 202 185L233 196C243 200 250 209 250 220V259C250 306 210 335 160 319C109 335 70 306 70 259V218L45 209C33 205 31 188 42 181L69 202Z" fill="url(#logoPurple)" opacity="0.96"/>
-    <path d="M69 202C71 189 84 181 96 185L125 195C135 198 142 208 142 219V249C142 260 149 270 160 273V319C109 335 70 306 70 259V218L45 209C33 205 31 188 42 181L69 202Z" fill="url(#modalMint)" opacity="0.9"/>
-    <path d="M142 249C142 260 149 270 160 273C171 270 178 260 178 249" stroke="#D7FF64" stroke-width="10" stroke-linecap="round" opacity="0.34"/>
+    <text x="36" y="277" fill="#7BFFB2" fill-opacity="0.34" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="142" font-weight="900" letter-spacing="-8">U</text>
+    <text x="20" y="264" fill="url(#logoPurple)" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="142" font-weight="900" letter-spacing="-8">U</text>
+    <path d="M54 168L74 179L74 262L54 254Z" fill="#D7FF64" opacity="0.2"/>
+    <path d="M162 170L181 181L181 255L162 263Z" fill="#0F0F0F" opacity="0.2"/>
+    <path d="M73 264C99 282 137 282 163 264" stroke="#D7FF64" stroke-width="7" stroke-linecap="round" opacity="0.3"/>
   </g>
 
   <g filter="url(#textShadow)">
