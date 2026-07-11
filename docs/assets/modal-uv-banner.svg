@@ -1,6 +1,6 @@
 <svg width="1280" height="420" viewBox="0 0 1280 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">modal-uv</title>
-  <desc id="desc">A dark banner for modal-uv, showing Modal-inspired mint prisms, uv-inspired lime and purple blocks, and the tagline local dev loop, Modal compute.</desc>
+  <desc id="desc">A dark banner for modal-uv, showing a prism-style green and purple M over U logo and the tagline local dev loop, Modal compute.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="420" gradientUnits="userSpaceOnUse">
       <stop stop-color="#0F0F0F"/>
@@ -12,9 +12,9 @@
       <stop offset="0.42" stop-color="#7BFFB2"/>
       <stop offset="1" stop-color="#31D794"/>
     </linearGradient>
-    <linearGradient id="uvGlow" x1="900" y1="80" x2="1148" y2="324" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#D7FF64"/>
-      <stop offset="1" stop-color="#DE5FE9"/>
+    <linearGradient id="logoPurple" x1="112" y1="84" x2="318" y2="326" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DE5FE9"/>
+      <stop offset="1" stop-color="#7BFFB2"/>
     </linearGradient>
     <filter id="softGlow" x="-40" y="-40" width="1360" height="500" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
       <feGaussianBlur stdDeviation="22" result="blur"/>
@@ -30,13 +30,16 @@
   <path d="M58 330C192 248 232 80 418 102C558 119 591 257 728 244C897 228 910 89 1139 63" stroke="#7BFFB2" stroke-opacity="0.16" stroke-width="2"/>
   <path d="M1220 89C1081 164 1064 316 872 306C729 299 694 182 555 191C378 203 333 332 119 350" stroke="#DE5FE9" stroke-opacity="0.16" stroke-width="2"/>
   <circle cx="242" cy="174" r="116" fill="#7BFFB2" opacity="0.08" filter="url(#softGlow)"/>
-  <circle cx="1010" cy="210" r="132" fill="#DE5FE9" opacity="0.12"/>
 
-  <g transform="translate(96 82)">
-    <path d="M34 218L77 38C80 25 93 17 106 22L147 37C157 41 164 51 164 62V236C164 248 153 256 142 252L101 239C91 236 84 226 84 216V117L59 230C56 244 42 252 29 247L-6 234C-18 229 -20 212 -9 204L34 218Z" fill="url(#modalMint)"/>
-    <path d="M157 218L200 38C203 25 216 17 229 22L270 37C280 41 287 51 287 62V236C287 248 276 256 265 252L224 239C214 236 207 226 207 216V117L182 230C179 244 165 252 152 247L117 234C105 229 103 212 114 204L157 218Z" fill="url(#modalMint)" opacity="0.88"/>
-    <path d="M106 22L147 37C157 41 164 51 164 62V236C164 248 153 256 142 252L101 239C91 236 84 226 84 216V117L106 22Z" fill="#D7FF64" opacity="0.2"/>
-    <path d="M229 22L270 37C280 41 287 51 287 62V236C287 248 276 256 265 252L224 239C214 236 207 226 207 216V117L229 22Z" fill="#D7FF64" opacity="0.2"/>
+  <g transform="translate(106 54)">
+    <path d="M63 44C66 30 80 22 93 27L124 39C134 43 141 53 141 64V159C141 171 130 179 119 175L89 164C79 160 72 151 72 140V93L55 171C52 185 38 193 25 188L-4 177C-16 172 -17 155 -6 148L25 158L63 44Z" fill="url(#modalMint)"/>
+    <path d="M167 44C170 30 184 22 197 27L228 39C238 43 245 53 245 64V159C245 171 234 179 223 175L193 164C183 160 176 151 176 140V93L159 171C156 185 142 193 129 188L100 177C88 172 87 155 98 148L129 158L167 44Z" fill="url(#logoPurple)"/>
+    <path d="M93 27L124 39C134 43 141 53 141 64V159C141 171 130 179 119 175L89 164C79 160 72 151 72 140V93L93 27Z" fill="#D7FF64" opacity="0.24"/>
+    <path d="M197 27L228 39C238 43 245 53 245 64V159C245 171 234 179 223 175L193 164C183 160 176 151 176 140V93L197 27Z" fill="#0F0F0F" opacity="0.16"/>
+
+    <path d="M69 202C71 189 84 181 96 185L125 195C135 198 142 208 142 219V249C142 260 149 270 160 273C171 270 178 260 178 249V201C178 189 190 181 202 185L233 196C243 200 250 209 250 220V259C250 306 210 335 160 319C109 335 70 306 70 259V218L45 209C33 205 31 188 42 181L69 202Z" fill="url(#logoPurple)" opacity="0.96"/>
+    <path d="M69 202C71 189 84 181 96 185L125 195C135 198 142 208 142 219V249C142 260 149 270 160 273V319C109 335 70 306 70 259V218L45 209C33 205 31 188 42 181L69 202Z" fill="url(#modalMint)" opacity="0.9"/>
+    <path d="M142 249C142 260 149 270 160 273C171 270 178 260 178 249" stroke="#D7FF64" stroke-width="10" stroke-linecap="round" opacity="0.34"/>
   </g>
 
   <g filter="url(#textShadow)">
@@ -53,27 +56,4 @@
     <text x="339" y="23" text-anchor="middle" fill="#E7FF9A" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="15" font-weight="700">agent-friendly sync</text>
   </g>
 
-  <g transform="translate(904 78)">
-    <circle cx="172" cy="164" r="116" fill="#DE5FE9" opacity="0.1"/>
-    <circle cx="172" cy="164" r="82" fill="#7BFFB2" opacity="0.06"/>
-    <path d="M83 137C99 73 166 37 228 62C263 76 289 103 301 138" stroke="#7BFFB2" stroke-width="12" stroke-linecap="round" opacity="0.88"/>
-    <path d="M297 190C278 252 211 286 151 259C118 244 94 217 83 183" stroke="#DE5FE9" stroke-width="12" stroke-linecap="round" opacity="0.86"/>
-    <path d="M297 139L315 146L300 160Z" fill="#7BFFB2" opacity="0.88"/>
-    <path d="M82 181L64 174L79 160Z" fill="#DE5FE9" opacity="0.86"/>
-
-    <rect x="122" y="112" width="100" height="86" rx="26" fill="#111111" stroke="#D7FF64" stroke-width="3"/>
-    <rect x="140" y="128" width="64" height="34" rx="17" fill="url(#uvGlow)" opacity="0.92"/>
-    <circle cx="153" cy="146" r="5" fill="#0F0F0F" opacity="0.72"/>
-    <circle cx="191" cy="146" r="5" fill="#0F0F0F" opacity="0.72"/>
-    <path d="M158 176C166 182 178 182 186 176" stroke="#7BFFB2" stroke-width="4" stroke-linecap="round"/>
-
-    <circle cx="77" cy="159" r="23" fill="#D7FF64" opacity="0.92"/>
-    <circle cx="269" cy="159" r="23" fill="#7BFFB2" opacity="0.9"/>
-    <circle cx="173" cy="59" r="20" fill="#DE5FE9" opacity="0.9"/>
-    <circle cx="173" cy="269" r="20" fill="#D7FF64" opacity="0.88"/>
-    <path d="M99 159H122" stroke="#D7FF64" stroke-width="5" stroke-linecap="round" opacity="0.72"/>
-    <path d="M222 159H246" stroke="#7BFFB2" stroke-width="5" stroke-linecap="round" opacity="0.72"/>
-    <path d="M173 79V111" stroke="#DE5FE9" stroke-width="5" stroke-linecap="round" opacity="0.72"/>
-    <path d="M173 198V249" stroke="#D7FF64" stroke-width="5" stroke-linecap="round" opacity="0.72"/>
-  </g>
 </svg>
