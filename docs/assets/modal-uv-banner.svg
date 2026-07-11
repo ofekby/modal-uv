@@ -31,13 +31,15 @@
   <path d="M1220 89C1081 164 1064 316 872 306C729 299 694 182 555 191C378 203 333 332 119 350" stroke="#DE5FE9" stroke-opacity="0.16" stroke-width="2"/>
   <circle cx="242" cy="174" r="116" fill="#7BFFB2" opacity="0.08" filter="url(#softGlow)"/>
 
-  <g transform="translate(118 50)">
-    <text x="107" y="145" text-anchor="middle" fill="#DE5FE9" fill-opacity="0.34" font-family="Consolas, 'Liberation Mono', 'SFMono-Regular', Menlo, Monaco, monospace" font-size="154" font-weight="700">M</text>
-    <text x="107" y="252" text-anchor="middle" fill="#7BFFB2" fill-opacity="0.28" font-family="Consolas, 'Liberation Mono', 'SFMono-Regular', Menlo, Monaco, monospace" font-size="154" font-weight="700">U</text>
-    <text x="92" y="134" text-anchor="middle" fill="url(#modalMint)" font-family="Consolas, 'Liberation Mono', 'SFMono-Regular', Menlo, Monaco, monospace" font-size="154" font-weight="700">M</text>
-    <text x="92" y="241" text-anchor="middle" fill="url(#logoPurple)" font-family="Consolas, 'Liberation Mono', 'SFMono-Regular', Menlo, Monaco, monospace" font-size="154" font-weight="700">U</text>
-    <path d="M52 29L67 40V246L52 241Z" fill="#D7FF64" opacity="0.18"/>
-    <path d="M136 34L153 45V250L136 241Z" fill="#0F0F0F" opacity="0.16"/>
+  <g transform="translate(108 42)">
+    <path d="M48 142V32L104 110L160 32V142" stroke="#DE5FE9" stroke-opacity="0.34" stroke-width="34" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <path d="M48 148V215C48 251 73 274 104 274C135 274 160 251 160 215V148" stroke="#7BFFB2" stroke-opacity="0.28" stroke-width="34" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <path d="M32 130V20L88 98L144 20V130" stroke="url(#modalMint)" stroke-width="34" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <path d="M32 136V203C32 239 57 262 88 262C119 262 144 239 144 203V136" stroke="url(#logoPurple)" stroke-width="34" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <path d="M16 20L32 30V130L16 124Z" fill="#D7FF64" opacity="0.18"/>
+    <path d="M144 20L160 30V130L144 124Z" fill="#0F0F0F" opacity="0.16"/>
+    <path d="M16 136L32 146V203C32 239 57 262 88 262V274C48 274 16 246 16 203V136Z" fill="#D7FF64" opacity="0.1"/>
+    <path d="M144 136L160 146V203C160 246 128 274 88 274V262C119 262 144 239 144 203V136Z" fill="#0F0F0F" opacity="0.12"/>
   </g>
 
   <g filter="url(#textShadow)">
