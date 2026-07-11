@@ -1,6 +1,20 @@
 # modal-uv
 
-Run `uv` commands on Modal.com with GPU support, direct file sync, async execution IDs, logs, abort, and persistent Modal volumes.
+<p align="center">
+  <a href="https://github.com/ofekby/modal-uv/actions/workflows/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/ofekby/modal-uv/ci.yml?branch=main&style=for-the-badge" alt="CI status"></a>
+  <a href="https://pypi.org/project/modal-uv/"><img src="https://img.shields.io/pypi/v/modal-uv?style=for-the-badge" alt="PyPI release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License"></a>
+</p>
+
+`modal-uv` lets a normal local project borrow Modal compute without turning the project into a Modal app.
+
+Use it when the local development loop is right, but the local machine is not: build native libraries on many CPUs, compile and run CUDA code on a remote GPU, run GPU tests, train models, or write artifacts and checkpoints into a persistent Modal Volume.
+
+It has a `uv`-native path for Python projects and a general shell path for everything else. `modal-uv run -- ...` executes ordinary `uv` workflows remotely, while `modal-uv exec -- ...` runs shell commands in the synced Modal work directory for projects that are not necessarily Python or `uv` based. The `uv` project model still makes a good default: reproducible dependencies, modern project layout, and a command shape coding agents already understand.
+
+The main advantage is the agent loop. Instead of asking a coding agent to write Modal entrypoints, copy files around, decide when to deploy, debug stale app state, and remember how to inspect or stop jobs, `modal-uv` gives the agent a local-feeling cycle: edit files, run the same command remotely, read output, debug, and rerun.
+
+Under the hood, `modal-uv` syncs only changed files, lazily deploys when runtime configuration changes, recovers stale local and remote state, tails initial output, returns execution IDs for long jobs, supports aborts, and keeps generated state out of your source tree.
 
 ## Installation
 
