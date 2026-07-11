@@ -1,4 +1,4 @@
-# modal-uv - Local dev loop, Modal compute
+# ☁️ modal-uv - Local dev loop, Modal compute
 
 <p align="center">
   <img src="docs/assets/modal-uv-banner.svg" alt="modal-uv - Local dev loop, Modal compute">
