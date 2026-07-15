@@ -74,6 +74,31 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
               Star on GitHub
             </a>
           </div>
+          <div class="agent-compat" aria-label="Compatible coding agents">
+            <p>Works with any coding agent</p>
+            <ul>
+              <li>
+                <Icon name="simple-icons:claude" aria-hidden="true" />
+                <span>Claude Code</span>
+              </li>
+              <li>
+                <Icon name="simple-icons:opencode" aria-hidden="true" />
+                <span>opencode</span>
+              </li>
+              <li>
+                <Icon name="openclaw" aria-hidden="true" />
+                <span>OpenClaw</span>
+              </li>
+              <li>
+                <Icon name="simple-icons:googlegemini" aria-hidden="true" />
+                <span>Gemini</span>
+              </li>
+              <li>
+                <Icon name="lucide:ellipsis" aria-hidden="true" />
+                <span>And more...</span>
+              </li>
+            </ul>
+          </div>
           <div class="install-strip" aria-label="Manual install command">
             <span>manual start</span>
             <code>pip install modal-uv</code>

@@ -167,6 +167,45 @@ p { color: var(--muted); }
 .button--secondary { color: var(--text); border-color: var(--faint); background: rgba(255, 255, 255, 0.055); }
 .button--secondary:hover { border-color: rgba(123, 255, 178, 0.45); }
 
+.agent-compat {
+  margin-top: 16px;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.agent-compat p {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.agent-compat ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agent-compat li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--faint);
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: rgba(244, 248, 255, 0.82);
+  background: rgba(16, 23, 37, 0.58);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.agent-compat svg {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
 .install-strip {
   display: inline-flex;
   align-items: center;
