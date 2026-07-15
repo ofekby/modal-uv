@@ -108,6 +108,8 @@ main { position: relative; z-index: 1; }
 
 .hero { min-height: calc(100vh - 64px); padding: clamp(18px, 3vw, 34px) 0 34px; }
 
+.hero.section-grid { align-items: start; }
+
 .eyebrow {
   margin: 0 0 16px;
   color: var(--mint);
