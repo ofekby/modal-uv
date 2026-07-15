@@ -3,6 +3,7 @@ import CommandPanel from "../components/CommandPanel.astro";
 import ComputeField from "../components/ComputeField.astro";
 import CopyPrompt from "../components/CopyPrompt.astro";
 import UseCaseCard from "../components/UseCaseCard.astro";
+import { Icon } from "astro-icon/components";
 import "../styles/global.css";
 
 const title = "modal-uv | Local loop. Modal compute.";
@@ -43,7 +44,10 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
         <a href="#use-cases">Use cases</a>
         <a href="#agent-loop">Agent loop</a>
         <a href="#agent-setup">Agent setup</a>
-        <a href="https://github.com/ofekby/modal-uv">GitHub</a>
+        <a href="https://github.com/ofekby/modal-uv">
+          <Icon class="icon" name="lucide:github" aria-hidden="true" />
+          GitHub
+        </a>
       </nav>
     </header>
 
@@ -57,9 +61,11 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
           </p>
           <div class="hero-actions">
             <button class="button button--primary" type="button" data-scroll-copy>
+              <Icon class="icon" name="lucide:copy" aria-hidden="true" />
               Copy agent setup prompt
             </button>
             <a class="button button--secondary" href="https://github.com/ofekby/modal-uv">
+              <Icon class="icon" name="lucide:github" aria-hidden="true" />
               Star on GitHub
             </a>
           </div>

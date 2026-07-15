@@ -94,8 +94,10 @@ main { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
 }
 
 .site-header nav { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 13px; }
-.site-header nav a { border-radius: 8px; padding: 9px 12px; }
+.site-header nav a { display: inline-flex; align-items: center; gap: 7px; border-radius: 8px; padding: 9px 12px; }
 .site-header nav a:hover { color: var(--text); background: rgba(255, 255, 255, 0.07); }
+
+.icon { flex: none; }
 
 main { position: relative; z-index: 1; }
 
@@ -152,6 +154,7 @@ p { color: var(--muted); }
   min-height: 44px;
   align-items: center;
   justify-content: center;
+  gap: 9px;
   border: 1px solid transparent;
   border-radius: 8px;
   padding: 12px 18px;
@@ -243,13 +246,13 @@ code { color: var(--lime); font-family: "JetBrains Mono", ui-monospace, SFMono-R
 
 .chat-row:nth-child(2) { --enter-delay: 0.65s; --exit-delay: 1.5s; }
 .chat-row:nth-child(3) { --enter-delay: 1.7s; }
-.chat-row:nth-child(4) { --enter-delay: 3s; --exit-delay: 4s; }
-.chat-row:nth-child(5) { --enter-delay: 4.2s; }
+.chat-row:nth-child(4) { --enter-delay: 2.35s; --exit-delay: 3.35s; }
+.chat-row:nth-child(5) { --enter-delay: 3.55s; }
 .chat-row:nth-child(6) { --enter-delay: 5s; }
-.chat-row:nth-child(7) { --enter-delay: 5.8s; --exit-delay: 6.7s; }
-.chat-row:nth-child(8) { --enter-delay: 6.9s; }
-.chat-row:nth-child(9) { --enter-delay: 7.9s; --exit-delay: 8.8s; }
-.chat-row:nth-child(10) { --enter-delay: 9s; }
+.chat-row:nth-child(7) { --enter-delay: 5.4s; --exit-delay: 6.3s; }
+.chat-row:nth-child(8) { --enter-delay: 6.5s; }
+.chat-row:nth-child(9) { --enter-delay: 7.2s; --exit-delay: 8.1s; }
+.chat-row:nth-child(10) { --enter-delay: 8.3s; }
 
 .chat-gutter {
   display: block;
@@ -309,9 +312,9 @@ code { color: var(--lime); font-family: "JetBrains Mono", ui-monospace, SFMono-R
     chat-collapse 0.26s ease var(--exit-delay, 1.2s) forwards;
 }
 .loading-dots { display: inline-flex; gap: 5px; padding: 4px 0; }
-.loading-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: dot-wait 1.2s ease-in-out infinite; }
-.loading-dots i:nth-child(2) { animation-delay: 0.18s; }
-.loading-dots i:nth-child(3) { animation-delay: 0.36s; }
+.loading-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: dot-wait 0.6s ease-in-out infinite; }
+.loading-dots i:nth-child(2) { animation-delay: 0.09s; }
+.loading-dots i:nth-child(3) { animation-delay: 0.18s; }
 
 .use-cases,
 .agent-loop,

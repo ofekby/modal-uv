@@ -1,4 +1,6 @@
 ---
+import { Icon } from "astro-icon/components";
+
 const agentPrompt = `Install modal-uv globally and set it up:
 1. Run: pip install modal-uv
 2. Run: modal-uv onboard
@@ -18,9 +20,13 @@ const agentPrompt = `Install modal-uv globally and set it up:
     </p>
     <div class="setup-actions">
       <button class="button button--primary" type="button" data-copy-prompt>
+        <Icon class="icon" name="lucide:copy" aria-hidden="true" />
         Copy agent setup prompt
       </button>
-      <a class="button button--secondary" href="https://github.com/ofekby/modal-uv">Star on GitHub</a>
+      <a class="button button--secondary" href="https://github.com/ofekby/modal-uv">
+        <Icon class="icon" name="lucide:github" aria-hidden="true" />
+        Star on GitHub
+      </a>
     </div>
     <p class="copy-status" data-copy-status aria-live="polite">Ready to copy.</p>
   </div>
