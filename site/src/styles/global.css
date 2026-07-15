@@ -97,7 +97,7 @@ main { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
 .site-header nav a { display: inline-flex; align-items: center; gap: 7px; border-radius: 8px; padding: 9px 12px; }
 .site-header nav a:hover { color: var(--text); background: rgba(255, 255, 255, 0.07); }
 
-.icon { flex: none; }
+.icon { flex: none; width: 18px; height: 18px; }
 
 main { position: relative; z-index: 1; }
 
@@ -189,6 +189,7 @@ code { color: var(--lime); font-family: "JetBrains Mono", ui-monospace, SFMono-R
 
 .agent-terminal {
   overflow: hidden;
+  height: min(536px, calc(100vh - 112px));
   max-height: min(640px, calc(100vh - 112px));
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 12px;
