@@ -223,7 +223,7 @@ code { color: var(--lime); font-family: "JetBrains Mono", ui-monospace, SFMono-R
 
 .agent-chat {
   display: grid;
-  gap: 7px;
+  gap: 5px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -232,24 +232,24 @@ code { color: var(--lime); font-family: "JetBrains Mono", ui-monospace, SFMono-R
 .chat-row {
   display: grid;
   grid-template-columns: 16px minmax(0, 1fr);
-  gap: 9px;
+  gap: 8px;
   align-items: start;
   max-height: 180px;
   overflow: hidden;
   opacity: 0;
   transform: translateY(10px);
-  animation: chat-enter 0.65s ease var(--enter-delay, 0s) forwards;
+  animation: chat-enter 0.48s ease var(--enter-delay, 0s) forwards;
 }
 
-.chat-row:nth-child(2) { --enter-delay: 1s; --exit-delay: 2.2s; }
-.chat-row:nth-child(3) { --enter-delay: 2.45s; }
-.chat-row:nth-child(4) { --enter-delay: 4.2s; --exit-delay: 5.6s; }
-.chat-row:nth-child(5) { --enter-delay: 5.85s; }
-.chat-row:nth-child(6) { --enter-delay: 7s; }
-.chat-row:nth-child(7) { --enter-delay: 8.1s; --exit-delay: 9.25s; }
-.chat-row:nth-child(8) { --enter-delay: 9.5s; }
-.chat-row:nth-child(9) { --enter-delay: 11s; --exit-delay: 12.35s; }
-.chat-row:nth-child(10) { --enter-delay: 12.6s; }
+.chat-row:nth-child(2) { --enter-delay: 0.65s; --exit-delay: 1.5s; }
+.chat-row:nth-child(3) { --enter-delay: 1.7s; }
+.chat-row:nth-child(4) { --enter-delay: 3s; --exit-delay: 4s; }
+.chat-row:nth-child(5) { --enter-delay: 4.2s; }
+.chat-row:nth-child(6) { --enter-delay: 5s; }
+.chat-row:nth-child(7) { --enter-delay: 5.8s; --exit-delay: 6.7s; }
+.chat-row:nth-child(8) { --enter-delay: 6.9s; }
+.chat-row:nth-child(9) { --enter-delay: 7.9s; --exit-delay: 8.8s; }
+.chat-row:nth-child(10) { --enter-delay: 9s; }
 
 .chat-gutter {
   display: block;
@@ -262,34 +262,34 @@ code { color: var(--lime); font-family: "JetBrains Mono", ui-monospace, SFMono-R
 .chat-line {
   position: relative;
   overflow: hidden;
-  min-height: 28px;
+  min-height: 24px;
   border: 1px solid transparent;
   border-radius: 3px;
-  padding: 5px 0;
+  padding: 3px 0;
   background: transparent;
 }
 
 .chat-line--block {
   border-color: var(--faint);
-  padding: 8px 10px;
+  padding: 6px 9px;
   background: rgba(8, 11, 18, 0.62);
 }
 
 .chat-line--loading {
   width: min(210px, 100%);
-  min-height: 24px;
-  padding: 7px 10px;
+  min-height: 22px;
+  padding: 5px 9px;
   background: rgba(255, 255, 255, 0.035);
 }
 
 .chat-line p,
 .chat-line pre { margin: 0; }
-.chat-line p { color: var(--text); font: 600 12px/1.45 "JetBrains Mono", monospace; }
+.chat-line p { color: var(--text); font: 600 12px/1.35 "JetBrains Mono", monospace; }
 .chat-line pre { overflow: auto; white-space: pre-wrap; }
-.chat-line code { color: var(--text); font-size: 10.5px; line-height: 1.4; }
+.chat-line code { color: var(--text); font-size: 10.5px; line-height: 1.32; }
 
 .diff-block code { display: block; }
-.diff-block span { display: block; padding: 1px 7px; }
+.diff-block span { display: block; padding: 0 6px; }
 .diff-context { color: rgba(244, 248, 255, 0.72); }
 .diff-remove { color: #ffe3e3; background: rgba(255, 107, 107, 0.48); }
 .diff-add { color: #e8fff0; background: rgba(7, 151, 77, 0.66); }
@@ -303,10 +303,10 @@ code { color: var(--lime); font-family: "JetBrains Mono", ui-monospace, SFMono-R
 .chat-row--success .chat-line--block { background: rgba(215, 255, 100, 0.07); }
 
 .chat-row--loading {
-  max-height: 54px;
+  max-height: 44px;
   animation:
-    chat-enter 0.45s ease var(--enter-delay, 0s) forwards,
-    chat-collapse 0.36s ease var(--exit-delay, 1.2s) forwards;
+    chat-enter 0.32s ease var(--enter-delay, 0s) forwards,
+    chat-collapse 0.26s ease var(--exit-delay, 1.2s) forwards;
 }
 .loading-dots { display: inline-flex; gap: 5px; padding: 4px 0; }
 .loading-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: dot-wait 1.2s ease-in-out infinite; }
