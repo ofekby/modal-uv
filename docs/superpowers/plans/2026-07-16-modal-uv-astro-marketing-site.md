@@ -24,7 +24,7 @@
 - Do not use the phrase “remote field” in user-facing copy.
 - Use the approved hero: `Local loop. Modal compute.`
 - Use the approved conversion priority: copy agent prompt, star GitHub, install manually.
-- Use the Compute Field Map direction: topology/paths/nodes as the memorable visual device.
+- Use the Agent GPU Session direction: a chat-like coding-agent transcript as the memorable visual device.
 - Motion must be subtle and disabled for `prefers-reduced-motion: reduce`.
 - The site must work on mobile and desktop.
 - Keep source files focused and easy to expand into future SEO pages.
@@ -36,7 +36,7 @@
 - Create `site/package.json`: local scripts and Astro dependency metadata for the marketing site.
 - Create `site/astro.config.mjs`: static Astro configuration with GitHub Pages-compatible `site` and `base` values.
 - Create `site/src/pages/index.astro`: single homepage composition, SEO metadata, component wiring, copy interaction script hook.
-- Create `site/src/components/ComputeField.astro`: hero topology visual and subtle animated map layer.
+- Create `site/src/components/ComputeField.astro`: hero chat illustration showing the agent prompt, GPU code, modal-uv run, error, fix, rerun, and success.
 - Create `site/src/components/CopyPrompt.astro`: agent setup prompt CTA and setup panel copy target.
 - Create `site/src/components/UseCaseCard.astro`: reusable visual card for GPU tests, training, CUDA checks, artifacts/checkpoints.
 - Create `site/src/components/CommandPanel.astro`: compact command/log surfaces for manual install, run, logs, and abort examples.
@@ -110,7 +110,7 @@
 
 ## Task 2: Implement The Visual System And Hero Composition
 
-**Goal:** Build the distinctive first-screen experience around `Local loop. Modal compute.` and the Compute Field Map visual.
+**Goal:** Build the distinctive first-screen experience around `Local loop. Modal compute.` and the chat-like Agent GPU Session visual.
 
 **Files:**
 - Create: `site/src/components/ComputeField.astro`
@@ -119,8 +119,8 @@
 
 **Definition Of Done:**
 - The hero uses the approved headline and outcome-focused subcopy.
-- The Compute Field Map visual appears in the hero on desktop and remains legible on mobile.
-- The visual includes labeled concepts: local loop, sync delta, Modal GPU, logs, abort, and volume/artifacts.
+- The chat session visual appears in the hero on desktop and remains legible on mobile.
+- The visual includes the full agent loop: user prompt, agent writes GPU code, runs with `modal-uv`, hits an error, fixes code, reruns, and succeeds.
 - Animation is subtle and disabled under reduced motion.
 - The hero has the three conversion surfaces: copy prompt, GitHub star, install command snippet.
 
@@ -137,24 +137,23 @@
 - [ ] **Step 2: Build the ComputeField component**
 
   Pseudocode:
-  - Use semantic markup and SVG or positioned elements for nodes and paths.
-  - Represent the loop as local edit, sync delta, GPU run, logs/abort, volume artifact.
-  - Use Modal Mint for active path motion, uv Violet for agent/uv details, Artifact Lime for volume/checkpoint details, and Field Blue for compute glow.
-  - Keep labels short and concrete.
+- Use semantic markup for a chat transcript.
+- Represent the loop as prompt, code, modal-uv run, remote error, fix, rerun success.
+- Use Modal Mint for user/setup moments, uv Violet for agent/code moments, Artifact Lime for success, and Field Blue for Modal run details.
+- Keep chat labels short and concrete.
 
 - [ ] **Step 3: Add subtle motion**
 
   Pseudocode:
-  - Animate path opacity or stroke offset slowly.
-  - Animate node glow with a restrained pulse.
-  - Avoid continuous large-scale movement.
-  - Add reduced-motion rules that freeze all path and reveal animations.
+- Animate chat rows into view subtly.
+- Avoid chat bubbles that jump, shake, or feel like a full simulator.
+- Add reduced-motion rules that freeze reveal animations.
 
 - [ ] **Step 4: Apply responsive layout**
 
   Pseudocode:
-  - Desktop: split hero into text/CTA column and topology visual column.
-  - Mobile: stack text first, then a simplified topology visual.
+- Desktop: split hero into text/CTA column and chat-session visual column.
+- Mobile: stack text first, then a compact chat session.
   - Ensure CTAs remain above the fold on typical mobile screens.
 
 - [ ] **Step 5: Build and visually inspect**
@@ -409,7 +408,7 @@
 
 ## Plan Self-Review
 
-- Spec coverage: The plan covers the single Astro homepage, Compute Field Map visual, conversion priority, copy prompt, GitHub star action, manual install, ML/GPU use cases, agentic loop, long jobs, artifacts, GitHub Pages readiness, accessibility, mobile behavior, and reduced motion.
+- Spec coverage: The plan covers the single Astro homepage, Agent GPU Session visual, conversion priority, copy prompt, GitHub star action, manual install, ML/GPU use cases, agentic loop, long jobs, artifacts, GitHub Pages readiness, accessibility, mobile behavior, and reduced motion.
 - Placeholder scan: No `TBD`, `TODO`, or deferred implementation placeholders remain. Optional OG image reuse is explicitly bounded and can be skipped without blocking the first version.
 - Type consistency: File names and component responsibilities are consistent across tasks. No framework island or extra animation dependency is introduced.
 - User constraint check: This plan intentionally avoids explicit implementation code and uses goals, DoD, constraints, spec references, commands, and pseudocode-level guidance.

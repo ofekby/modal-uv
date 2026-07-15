@@ -53,11 +53,11 @@ Core section headlines:
 
 ## Visual Direction
 
-Direction name: Compute Field Map.
+Direction name: Agent GPU Session.
 
-The site should feel like a live map of work moving from local development into Modal compute. The signature element is a subtle animated topology layer that represents file deltas, a Modal execution ID, logs, abort control, and volume artifacts moving through one loop.
+The site should feel like watching a coding agent use Modal compute in the same loop a developer wants: user prompt, agent writes GPU-related code, agent runs it with `modal-uv`, the remote run hits an error, the agent fixes the code, reruns, and succeeds.
 
-This is the primary aesthetic risk: the hero visual is not a conventional terminal screenshot. It is a quiet compute map that makes `modal-uv` feel like transport infrastructure for ML iteration and agentic development. Command snippets still appear, but the map carries the identity.
+This is the primary aesthetic risk: the hero visual is a chat-like agent transcript instead of a conventional product screenshot or terminal-only block. It makes the agent-native behavior concrete and shows why remote GPU access matters: the agent can run, observe, fix, and rerun without the human becoming the bridge.
 
 Do not call the concept “remote field” in user-facing copy. Use direct language such as `Modal compute`, `GPU lane`, `long jobs`, `logs`, `artifacts`, and `one command`.
 
@@ -76,12 +76,12 @@ Typography:
 
 - Display: `Space Grotesk` or `Geist`, tight tracking, large line-height, restrained use.
 - Body: `Inter` or `Source Sans 3`, readable marketing copy.
-- Utility: `JetBrains Mono`, for commands, execution IDs, topology labels, and system states.
+- Utility: `JetBrains Mono`, for commands, execution IDs, chat labels, and system states.
 
 Type treatment:
 
 - Hero headline uses short stacked lines with high contrast and tight spacing.
-- Mono labels encode system state, such as `LOCAL`, `SYNC DELTA`, `GPU RUN`, `LOGS`, and `VOLUME`.
+- Mono labels encode chat and system state, such as `USER PROMPT`, `AGENT WRITES CODE`, `REMOTE ERROR`, and `RERUN SUCCEEDS`.
 - Copy should be concrete and short. Avoid generic phrases like “supercharge your workflow.”
 
 ## Page Structure
@@ -99,7 +99,7 @@ Short outcome-focused subcopy.
 Primary CTA: Copy agent setup prompt.
 Secondary CTA: Star on GitHub.
 Tertiary install command snippet.
-Subtle animated compute topology.
+Chat-like agent session illustration.
 
 [use cases]
 GPU tests | model training | CUDA checks | artifacts/checkpoints
@@ -122,7 +122,7 @@ Copy prompt | GitHub | PyPI | License
 
 Motion should be subtle, not a scroll-heavy demo.
 
-- The hero topology layer slowly pulses paths between local work, Modal GPU, logs, and artifact nodes.
+- The hero chat transcript reveals the agent loop in sequence: prompt, code, run, error, fix, success.
 - Section reveals use small opacity and translate transitions.
 - Hover states should feel like map nodes activating, not generic card lift everywhere.
 - `prefers-reduced-motion: reduce` disables path animation and reveal transitions.

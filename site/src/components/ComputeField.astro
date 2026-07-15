@@ -1,77 +1,62 @@
-<figure class="compute-field" aria-labelledby="compute-field-title">
+<figure class="compute-field chat-illustration" aria-labelledby="compute-field-title">
   <figcaption>
-    <p class="eyebrow">Live execution map</p>
-    <h2 id="compute-field-title">One command opens the GPU lane.</h2>
+    <p class="eyebrow">Agent GPU session</p>
+    <h2 id="compute-field-title">The agent loop, running on Modal.</h2>
   </figcaption>
 
-  <div class="field-canvas" aria-hidden="true">
-    <svg viewBox="0 0 720 520" role="img">
-      <defs>
-        <radialGradient id="computeGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="#6DA7FF" stop-opacity="0.45" />
-          <stop offset="100%" stop-color="#6DA7FF" stop-opacity="0" />
-        </radialGradient>
-        <linearGradient id="activePath" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#7BFFB2" />
-          <stop offset="52%" stop-color="#DE5FE9" />
-          <stop offset="100%" stop-color="#D7FF64" />
-        </linearGradient>
-        <filter id="softGlow">
-          <feGaussianBlur stdDeviation="5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
+  <ol class="agent-chat" aria-label="Example coding agent session">
+    <li class="chat-row chat-row--user">
+      <div class="chat-avatar">you</div>
+      <div class="chat-bubble">
+        <span class="chat-label">User prompt</span>
+        <p>Write a GPU smoke test for the CUDA kernel and run it on Modal.</p>
+      </div>
+    </li>
 
-      <rect width="720" height="520" rx="38" fill="url(#computeGlow)" />
-      <path class="grid-line" d="M78 78H642M78 164H642M78 250H642M78 336H642M78 422H642" />
-      <path class="grid-line" d="M116 54V466M228 54V466M340 54V466M452 54V466M564 54V466" />
+    <li class="chat-row chat-row--agent">
+      <div class="chat-avatar">ai</div>
+      <div class="chat-bubble">
+        <span class="chat-label">Agent writes code</span>
+        <pre><code>def test_kernel_matches_torch():
+    x = torch.randn(4096, device="cuda")
+    assert kernel(x).is_cuda</code></pre>
+      </div>
+    </li>
 
-      <path class="field-path field-path--ghost" d="M130 290C210 170 278 168 344 248S482 390 594 202" />
-      <path class="field-path field-path--active" d="M130 290C210 170 278 168 344 248S482 390 594 202" />
-      <path class="field-path field-path--secondary" d="M344 248C384 154 474 124 594 202" />
-      <path class="field-path field-path--secondary field-path--late" d="M344 248C408 306 438 390 512 404" />
+    <li class="chat-row chat-row--tool">
+      <div class="chat-avatar">run</div>
+      <div class="chat-bubble">
+        <span class="chat-label">Runs with modal-uv</span>
+        <pre><code>$ modal-uv run -- pytest -m gpu
+sync 18 changed files
+spawned fc-82a... tailing logs</code></pre>
+      </div>
+    </li>
 
-      <g class="field-node field-node--local" transform="translate(130 290)">
-        <circle r="42" />
-        <text y="-6">LOCAL</text>
-        <text y="14">LOOP</text>
-      </g>
-      <g class="field-node field-node--sync" transform="translate(344 248)">
-        <circle r="36" />
-        <text y="-6">SYNC</text>
-        <text y="14">DELTA</text>
-      </g>
-      <g class="field-node field-node--gpu" transform="translate(594 202)">
-        <circle r="52" />
-        <text y="-6">MODAL</text>
-        <text y="14">GPU</text>
-      </g>
-      <g class="field-node field-node--logs" transform="translate(512 404)">
-        <circle r="38" />
-        <text y="-6">LOGS</text>
-        <text y="14">ABORT</text>
-      </g>
+    <li class="chat-row chat-row--error">
+      <div class="chat-avatar">err</div>
+      <div class="chat-bubble">
+        <span class="chat-label">Remote error</span>
+        <p>AssertionError: expected output on cuda:0, got cpu</p>
+      </div>
+    </li>
 
-      <g class="artifact-node" transform="translate(214 396)">
-        <rect x="-56" y="-22" width="112" height="44" rx="16" />
-        <text y="5">VOLUME</text>
-      </g>
-    </svg>
+    <li class="chat-row chat-row--agent">
+      <div class="chat-avatar">ai</div>
+      <div class="chat-bubble">
+        <span class="chat-label">Agent fixes code</span>
+        <pre><code>out = kernel(x).to("cuda")
+torch.testing.assert_close(out, expected)</code></pre>
+      </div>
+    </li>
 
-    <div class="field-chip field-chip--run">
-      <span>spawned</span>
-      <strong>fc-82a...</strong>
-    </div>
-    <div class="field-chip field-chip--files">
-      <span>changed</span>
-      <strong>18 files</strong>
-    </div>
-    <div class="field-chip field-chip--artifact">
-      <span>checkpoint</span>
-      <strong>/mnt/volume</strong>
-    </div>
-  </div>
+    <li class="chat-row chat-row--success">
+      <div class="chat-avatar">ok</div>
+      <div class="chat-bubble">
+        <span class="chat-label">Rerun succeeds</span>
+        <pre><code>$ modal-uv run -- pytest -m gpu
+3 passed / logs saved / checkpoint persisted</code></pre>
+      </div>
+    </li>
+  </ol>
 </figure>
