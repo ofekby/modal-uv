@@ -1,62 +1,89 @@
 <figure class="compute-field chat-illustration" aria-labelledby="compute-field-title">
   <figcaption>
-    <p class="eyebrow">Agent GPU session</p>
+    <p class="eyebrow">Live coding-agent session</p>
     <h2 id="compute-field-title">The agent loop, running on Modal.</h2>
   </figcaption>
 
-  <ol class="agent-chat" aria-label="Example coding agent session">
-    <li class="chat-row chat-row--user">
-      <div class="chat-avatar">you</div>
-      <div class="chat-bubble">
-        <span class="chat-label">User prompt</span>
-        <p>Write a GPU smoke test for the CUDA kernel and run it on Modal.</p>
-      </div>
-    </li>
+  <div class="agent-terminal" aria-label="Animated opencode-style coding agent session">
+    <div class="agent-terminal__bar">
+      <div class="terminal-lights" aria-hidden="true"><span></span><span></span><span></span></div>
+      <span class="terminal-title">opencode / modal-uv</span>
+      <span class="terminal-status">session running</span>
+    </div>
 
-    <li class="chat-row chat-row--agent">
-      <div class="chat-avatar">ai</div>
-      <div class="chat-bubble">
-        <span class="chat-label">Agent writes code</span>
-        <pre><code>def test_kernel_matches_torch():
+    <div class="agent-terminal__body">
+      <aside class="agent-sidebar" aria-label="Session context">
+        <span class="sidebar-label">workspace</span>
+        <strong>~/repos/modal-uv</strong>
+        <span class="sidebar-label">tools</span>
+        <code>bash</code>
+        <code>edit</code>
+        <code>modal-uv</code>
+        <span class="sidebar-label">state</span>
+        <span class="sidebar-pill">watching logs</span>
+      </aside>
+
+      <ol class="agent-chat" aria-label="Example coding agent session">
+        <li class="chat-row chat-row--user">
+          <div class="chat-avatar">you</div>
+          <div class="chat-bubble">
+            <span class="chat-label">Prompt</span>
+            <p>Write a GPU smoke test for the CUDA kernel and run it on Modal.</p>
+          </div>
+        </li>
+
+        <li class="chat-row chat-row--agent">
+          <div class="chat-avatar">ai</div>
+          <div class="chat-bubble">
+            <span class="chat-label">Writes test_gpu.py</span>
+            <pre><code>def test_kernel_matches_torch():
     x = torch.randn(4096, device="cuda")
     assert kernel(x).is_cuda</code></pre>
-      </div>
-    </li>
+          </div>
+        </li>
 
-    <li class="chat-row chat-row--tool">
-      <div class="chat-avatar">run</div>
-      <div class="chat-bubble">
-        <span class="chat-label">Runs with modal-uv</span>
-        <pre><code>$ modal-uv run -- pytest -m gpu
+        <li class="chat-row chat-row--tool">
+          <div class="chat-avatar">run</div>
+          <div class="chat-bubble">
+            <span class="chat-label">Bash tool</span>
+            <pre><code>$ modal-uv run -- pytest -m gpu
 sync 18 changed files
 spawned fc-82a... tailing logs</code></pre>
-      </div>
-    </li>
+          </div>
+        </li>
 
-    <li class="chat-row chat-row--error">
-      <div class="chat-avatar">err</div>
-      <div class="chat-bubble">
-        <span class="chat-label">Remote error</span>
-        <p>AssertionError: expected output on cuda:0, got cpu</p>
-      </div>
-    </li>
+        <li class="chat-row chat-row--error">
+          <div class="chat-avatar">err</div>
+          <div class="chat-bubble">
+            <span class="chat-label">Remote error</span>
+            <p>AssertionError: expected output on cuda:0, got cpu</p>
+          </div>
+        </li>
 
-    <li class="chat-row chat-row--agent">
-      <div class="chat-avatar">ai</div>
-      <div class="chat-bubble">
-        <span class="chat-label">Agent fixes code</span>
-        <pre><code>out = kernel(x).to("cuda")
+        <li class="chat-row chat-row--agent">
+          <div class="chat-avatar">ai</div>
+          <div class="chat-bubble">
+            <span class="chat-label">Patches kernel output</span>
+            <pre><code>out = kernel(x).to("cuda")
 torch.testing.assert_close(out, expected)</code></pre>
-      </div>
-    </li>
+          </div>
+        </li>
 
-    <li class="chat-row chat-row--success">
-      <div class="chat-avatar">ok</div>
-      <div class="chat-bubble">
-        <span class="chat-label">Rerun succeeds</span>
-        <pre><code>$ modal-uv run -- pytest -m gpu
+        <li class="chat-row chat-row--success">
+          <div class="chat-avatar">ok</div>
+          <div class="chat-bubble">
+            <span class="chat-label">Rerun succeeds</span>
+            <pre><code>$ modal-uv run -- pytest -m gpu
 3 passed / logs saved / checkpoint persisted</code></pre>
+          </div>
+        </li>
+      </ol>
+
+      <div class="agent-input" aria-hidden="true">
+        <span>&gt;</span>
+        <span class="agent-input__text">modal-uv logs fc-82a...</span>
+        <span class="cursor"></span>
       </div>
-    </li>
-  </ol>
+    </div>
+  </div>
 </figure>

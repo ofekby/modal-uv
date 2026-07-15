@@ -24,7 +24,7 @@
 - Do not use the phrase “remote field” in user-facing copy.
 - Use the approved hero: `Local loop. Modal compute.`
 - Use the approved conversion priority: copy agent prompt, star GitHub, install manually.
-- Use the Agent GPU Session direction: a chat-like coding-agent transcript as the memorable visual device.
+- Use the Agent GPU Session direction: an opencode-inspired coding-agent TUI transcript as the memorable visual device.
 - Motion must be subtle and disabled for `prefers-reduced-motion: reduce`.
 - The site must work on mobile and desktop.
 - Keep source files focused and easy to expand into future SEO pages.
@@ -36,7 +36,7 @@
 - Create `site/package.json`: local scripts and Astro dependency metadata for the marketing site.
 - Create `site/astro.config.mjs`: static Astro configuration with GitHub Pages-compatible `site` and `base` values.
 - Create `site/src/pages/index.astro`: single homepage composition, SEO metadata, component wiring, copy interaction script hook.
-- Create `site/src/components/ComputeField.astro`: hero chat illustration showing the agent prompt, GPU code, modal-uv run, error, fix, rerun, and success.
+- Create `site/src/components/ComputeField.astro`: hero opencode-style TUI illustration showing the agent prompt, GPU code, modal-uv run, error, fix, rerun, and success.
 - Create `site/src/components/CopyPrompt.astro`: agent setup prompt CTA and setup panel copy target.
 - Create `site/src/components/UseCaseCard.astro`: reusable visual card for GPU tests, training, CUDA checks, artifacts/checkpoints.
 - Create `site/src/components/CommandPanel.astro`: compact command/log surfaces for manual install, run, logs, and abort examples.
@@ -110,7 +110,7 @@
 
 ## Task 2: Implement The Visual System And Hero Composition
 
-**Goal:** Build the distinctive first-screen experience around `Local loop. Modal compute.` and the chat-like Agent GPU Session visual.
+**Goal:** Build the distinctive first-screen experience around `Local loop. Modal compute.` and the opencode-style Agent GPU Session visual.
 
 **Files:**
 - Create: `site/src/components/ComputeField.astro`
@@ -119,7 +119,7 @@
 
 **Definition Of Done:**
 - The hero uses the approved headline and outcome-focused subcopy.
-- The chat session visual appears in the hero on desktop and remains legible on mobile.
+- The TUI chat session visual appears in the hero on desktop and remains legible on mobile.
 - The visual includes the full agent loop: user prompt, agent writes GPU code, runs with `modal-uv`, hits an error, fixes code, reruns, and succeeds.
 - Animation is subtle and disabled under reduced motion.
 - The hero has the three conversion surfaces: copy prompt, GitHub star, install command snippet.
@@ -137,7 +137,7 @@
 - [ ] **Step 2: Build the ComputeField component**
 
   Pseudocode:
-- Use semantic markup for a chat transcript.
+- Use semantic markup for a TUI-styled chat transcript.
 - Represent the loop as prompt, code, modal-uv run, remote error, fix, rerun success.
 - Use Modal Mint for user/setup moments, uv Violet for agent/code moments, Artifact Lime for success, and Field Blue for Modal run details.
 - Keep chat labels short and concrete.
