@@ -12,23 +12,20 @@
     </div>
 
     <div class="agent-terminal__body">
-      <aside class="agent-sidebar" aria-label="Session context">
-        <span class="sidebar-label">workspace</span>
-        <strong>~/repos/modal-uv</strong>
-        <span class="sidebar-label">tools</span>
-        <code>bash</code>
-        <code>edit</code>
-        <code>modal-uv</code>
-        <span class="sidebar-label">state</span>
-        <span class="sidebar-pill">watching logs</span>
-      </aside>
-
       <ol class="agent-chat" aria-label="Example coding agent session">
         <li class="chat-row chat-row--user">
           <div class="chat-avatar">you</div>
           <div class="chat-bubble">
             <span class="chat-label">Prompt</span>
             <p>Write a GPU smoke test for the CUDA kernel and run it on Modal.</p>
+          </div>
+        </li>
+
+        <li class="chat-row chat-row--loading chat-row--agent-loading">
+          <div class="chat-avatar">ai</div>
+          <div class="chat-bubble">
+            <span class="chat-label">Agent is editing</span>
+            <span class="loading-dots" aria-label="Loading"><i></i><i></i><i></i></span>
           </div>
         </li>
 
@@ -39,6 +36,14 @@
             <pre><code>def test_kernel_matches_torch():
     x = torch.randn(4096, device="cuda")
     assert kernel(x).is_cuda</code></pre>
+          </div>
+        </li>
+
+        <li class="chat-row chat-row--loading chat-row--tool-loading">
+          <div class="chat-avatar">run</div>
+          <div class="chat-bubble">
+            <span class="chat-label">Running on Modal</span>
+            <span class="loading-track"><span></span></span>
           </div>
         </li>
 
@@ -60,12 +65,28 @@ spawned fc-82a... tailing logs</code></pre>
           </div>
         </li>
 
+        <li class="chat-row chat-row--loading chat-row--fix-loading">
+          <div class="chat-avatar">ai</div>
+          <div class="chat-bubble">
+            <span class="chat-label">Agent is patching</span>
+            <span class="loading-dots" aria-label="Loading"><i></i><i></i><i></i></span>
+          </div>
+        </li>
+
         <li class="chat-row chat-row--agent">
           <div class="chat-avatar">ai</div>
           <div class="chat-bubble">
             <span class="chat-label">Patches kernel output</span>
             <pre><code>out = kernel(x).to("cuda")
 torch.testing.assert_close(out, expected)</code></pre>
+          </div>
+        </li>
+
+        <li class="chat-row chat-row--loading chat-row--rerun-loading">
+          <div class="chat-avatar">run</div>
+          <div class="chat-bubble">
+            <span class="chat-label">Rerunning GPU test</span>
+            <span class="loading-track"><span></span></span>
           </div>
         </li>
 

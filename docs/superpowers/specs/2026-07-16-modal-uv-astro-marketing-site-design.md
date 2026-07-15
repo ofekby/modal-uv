@@ -55,7 +55,7 @@ Core section headlines:
 
 Direction name: Agent GPU Session.
 
-The site should feel like watching a coding agent use Modal compute inside an opencode-style terminal TUI: session chrome, workspace/tool context, user prompt, agent writes GPU-related code, agent runs it with `modal-uv`, the remote run hits an error, the agent fixes the code, reruns, and succeeds.
+The site should feel like watching a coding agent use Modal compute inside an opencode-style terminal TUI: compact session chrome, user prompt, mocked agent loading states, agent writes GPU-related code, agent runs it with `modal-uv`, the remote run hits an error, the agent fixes the code, reruns, and succeeds. Avoid IDE-like sidebars in the hero; the illustration should stay focused on the live agent loop.
 
 This is the primary aesthetic risk: the hero visual is an animated coding-agent TUI instead of a conventional product screenshot or terminal-only block. It makes the agent-native behavior concrete and shows why remote GPU access matters: the agent can run, observe, fix, and rerun without the human becoming the bridge.
 
@@ -122,7 +122,7 @@ Copy prompt | GitHub | PyPI | License
 
 Motion should be subtle, not a scroll-heavy demo.
 
-- The hero TUI animates the agent loop in sequence: prompt, code, run, error, fix, success.
+- The hero TUI animates the agent loop slowly in sequence: prompt, loading, code, run loading, error, fix loading, rerun loading, success.
 - Section reveals use small opacity and translate transitions.
 - Hover states should feel like map nodes activating, not generic card lift everywhere.
 - `prefers-reduced-motion: reduce` disables path animation and reveal transitions.

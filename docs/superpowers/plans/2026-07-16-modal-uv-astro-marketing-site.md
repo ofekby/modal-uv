@@ -36,7 +36,7 @@
 - Create `site/package.json`: local scripts and Astro dependency metadata for the marketing site.
 - Create `site/astro.config.mjs`: static Astro configuration with GitHub Pages-compatible `site` and `base` values.
 - Create `site/src/pages/index.astro`: single homepage composition, SEO metadata, component wiring, copy interaction script hook.
-- Create `site/src/components/ComputeField.astro`: hero opencode-style TUI illustration showing the agent prompt, GPU code, modal-uv run, error, fix, rerun, and success.
+- Create `site/src/components/ComputeField.astro`: hero opencode-style TUI illustration showing the agent prompt, mocked loading states, GPU code, modal-uv run, error, fix, rerun, and success. Do not include an IDE-like sidebar in the hero.
 - Create `site/src/components/CopyPrompt.astro`: agent setup prompt CTA and setup panel copy target.
 - Create `site/src/components/UseCaseCard.astro`: reusable visual card for GPU tests, training, CUDA checks, artifacts/checkpoints.
 - Create `site/src/components/CommandPanel.astro`: compact command/log surfaces for manual install, run, logs, and abort examples.
@@ -120,7 +120,7 @@
 **Definition Of Done:**
 - The hero uses the approved headline and outcome-focused subcopy.
 - The TUI chat session visual appears in the hero on desktop and remains legible on mobile.
-- The visual includes the full agent loop: user prompt, agent writes GPU code, runs with `modal-uv`, hits an error, fixes code, reruns, and succeeds.
+- The visual includes the full agent loop: user prompt, mocked loading states, agent writes GPU code, runs with `modal-uv`, hits an error, fixes code, reruns, and succeeds.
 - Animation is subtle and disabled under reduced motion.
 - The hero has the three conversion surfaces: copy prompt, GitHub star, install command snippet.
 
