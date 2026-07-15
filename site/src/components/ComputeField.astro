@@ -8,89 +8,79 @@
 
     <div class="agent-terminal__body">
       <ol class="agent-chat" aria-label="Example coding agent session">
-        <li class="chat-row chat-row--user">
-          <div class="chat-avatar">you</div>
-          <div class="chat-bubble">
-            <span class="chat-label">Prompt</span>
-            <p>Write a GPU smoke test for the CUDA kernel and run it on Modal.</p>
+        <li class="chat-row chat-row--prompt">
+          <span class="chat-gutter" aria-hidden="true">&gt;</span>
+          <div class="chat-line">
+            <p>Run the benchmark on a Modal GPU, fix failures, and keep the results.</p>
           </div>
         </li>
 
         <li class="chat-row chat-row--loading chat-row--agent-loading">
-          <div class="chat-avatar">ai</div>
-          <div class="chat-bubble">
-            <span class="chat-label">Agent is editing</span>
+          <span class="chat-gutter" aria-hidden="true">·</span>
+          <div class="chat-line chat-line--loading">
             <span class="loading-dots" aria-label="Loading"><i></i><i></i><i></i></span>
           </div>
         </li>
 
         <li class="chat-row chat-row--agent">
-          <div class="chat-avatar">ai</div>
-          <div class="chat-bubble">
-            <span class="chat-label">Writes test_gpu.py</span>
-            <pre><code>def test_kernel_matches_torch():
-    x = torch.randn(4096, device="cuda")
-    assert kernel(x).is_cuda</code></pre>
+          <span class="chat-gutter" aria-hidden="true">✦</span>
+          <div class="chat-line chat-line--block">
+            <pre><code>def run_benchmark():
+    x = torch.randn(8192, 8192, device="cuda")
+    return kernel(x).mean().item()</code></pre>
           </div>
         </li>
 
         <li class="chat-row chat-row--loading chat-row--tool-loading">
-          <div class="chat-avatar">run</div>
-          <div class="chat-bubble">
-            <span class="chat-label">Running on Modal</span>
+          <span class="chat-gutter" aria-hidden="true">·</span>
+          <div class="chat-line chat-line--loading">
             <span class="loading-track"><span></span></span>
           </div>
         </li>
 
         <li class="chat-row chat-row--tool">
-          <div class="chat-avatar">run</div>
-          <div class="chat-bubble">
-            <span class="chat-label">Bash tool</span>
-            <pre><code>$ modal-uv run -- pytest -m gpu
+          <span class="chat-gutter" aria-hidden="true">$</span>
+          <div class="chat-line chat-line--block">
+            <pre><code>$ modal-uv run -- python run_benchmark.py
 sync 18 changed files
 spawned fc-82a... tailing logs</code></pre>
           </div>
         </li>
 
         <li class="chat-row chat-row--error">
-          <div class="chat-avatar">err</div>
-          <div class="chat-bubble">
-            <span class="chat-label">Remote error</span>
-            <p>AssertionError: expected output on cuda:0, got cpu</p>
+          <span class="chat-gutter" aria-hidden="true">×</span>
+          <div class="chat-line">
+            <p>RuntimeError: expected all tensors on cuda:0, got cpu</p>
           </div>
         </li>
 
         <li class="chat-row chat-row--loading chat-row--fix-loading">
-          <div class="chat-avatar">ai</div>
-          <div class="chat-bubble">
-            <span class="chat-label">Agent is patching</span>
+          <span class="chat-gutter" aria-hidden="true">·</span>
+          <div class="chat-line chat-line--loading">
             <span class="loading-dots" aria-label="Loading"><i></i><i></i><i></i></span>
           </div>
         </li>
 
         <li class="chat-row chat-row--agent">
-          <div class="chat-avatar">ai</div>
-          <div class="chat-bubble">
-            <span class="chat-label">Patches kernel output</span>
-            <pre><code>out = kernel(x).to("cuda")
-torch.testing.assert_close(out, expected)</code></pre>
+          <span class="chat-gutter" aria-hidden="true">✦</span>
+          <div class="chat-line chat-line--block">
+            <pre><code>weights = load_weights().to("cuda")
+result = kernel(x, weights)</code></pre>
           </div>
         </li>
 
         <li class="chat-row chat-row--loading chat-row--rerun-loading">
-          <div class="chat-avatar">run</div>
-          <div class="chat-bubble">
-            <span class="chat-label">Rerunning GPU test</span>
+          <span class="chat-gutter" aria-hidden="true">·</span>
+          <div class="chat-line chat-line--loading">
             <span class="loading-track"><span></span></span>
           </div>
         </li>
 
         <li class="chat-row chat-row--success">
-          <div class="chat-avatar">ok</div>
-          <div class="chat-bubble">
-            <span class="chat-label">Rerun succeeds</span>
-            <pre><code>$ modal-uv run -- pytest -m gpu
-3 passed / logs saved / checkpoint persisted</code></pre>
+          <span class="chat-gutter" aria-hidden="true">✓</span>
+          <div class="chat-line chat-line--block">
+            <pre><code>$ modal-uv run -- python run_benchmark.py
+31.4 ms p50 / logs saved / results persisted</code></pre>
           </div>
         </li>
       </ol>
