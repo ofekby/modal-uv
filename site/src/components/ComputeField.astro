@@ -2,7 +2,7 @@
   <div class="agent-terminal" aria-label="Animated opencode-style coding agent session">
     <div class="agent-terminal__bar">
       <div class="terminal-lights" aria-hidden="true"><span></span><span></span><span></span></div>
-      <span class="terminal-title">opencode / modal-uv</span>
+      <span class="terminal-title">Coding Agent</span>
       <span class="terminal-status">session running</span>
     </div>
 
@@ -25,16 +25,17 @@
         <li class="chat-row chat-row--agent">
           <span class="chat-gutter" aria-hidden="true">✦</span>
           <div class="chat-line chat-line--block">
-            <pre><code>def run_benchmark():
-    x = torch.randn(8192, 8192, device="cuda")
-    return kernel(x).mean().item()</code></pre>
+            <pre class="diff-block"><code><span class="diff-context">  7  def run_benchmark():</span>
+<span class="diff-remove">- 8      x = torch.randn(8192, 8192)</span>
+<span class="diff-add">+ 8      x = torch.randn(8192, 8192, device="cuda")</span>
+<span class="diff-context">  9      return kernel(x).mean().item()</span></code></pre>
           </div>
         </li>
 
         <li class="chat-row chat-row--loading chat-row--tool-loading">
           <span class="chat-gutter" aria-hidden="true">·</span>
           <div class="chat-line chat-line--loading">
-            <span class="loading-track"><span></span></span>
+            <span class="loading-dots" aria-label="Loading"><i></i><i></i><i></i></span>
           </div>
         </li>
 
@@ -64,15 +65,17 @@ spawned fc-82a... tailing logs</code></pre>
         <li class="chat-row chat-row--agent">
           <span class="chat-gutter" aria-hidden="true">✦</span>
           <div class="chat-line chat-line--block">
-            <pre><code>weights = load_weights().to("cuda")
-result = kernel(x, weights)</code></pre>
+            <pre class="diff-block"><code><span class="diff-context"> 14  def load_inputs():</span>
+<span class="diff-remove">-15      weights = load_weights()</span>
+<span class="diff-add">+15      weights = load_weights().to("cuda")</span>
+<span class="diff-context"> 16      return x, weights</span></code></pre>
           </div>
         </li>
 
         <li class="chat-row chat-row--loading chat-row--rerun-loading">
           <span class="chat-gutter" aria-hidden="true">·</span>
           <div class="chat-line chat-line--loading">
-            <span class="loading-track"><span></span></span>
+            <span class="loading-dots" aria-label="Loading"><i></i><i></i><i></i></span>
           </div>
         </li>
 
@@ -84,12 +87,6 @@ result = kernel(x, weights)</code></pre>
           </div>
         </li>
       </ol>
-
-      <div class="agent-input" aria-hidden="true">
-        <span>&gt;</span>
-        <span class="agent-input__text">modal-uv logs fc-82a...</span>
-        <span class="cursor"></span>
-      </div>
     </div>
   </div>
 </figure>
