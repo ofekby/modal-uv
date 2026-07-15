@@ -1,0 +1,35 @@
+---
+const agentPrompt = `Install modal-uv globally and set it up:
+1. Run: pip install modal-uv
+2. Run: modal-uv onboard
+3. In the project repo, run: modal-uv init
+4. Edit modal-uv.yaml for GPU, timeout, and volumes
+5. Run: modal-uv doctor
+6. Use modal-uv run -- <uv command> or modal-uv exec -- <shell command>`;
+---
+
+<section class="setup-panel" id="agent-setup" aria-labelledby="setup-title">
+  <div>
+    <p class="eyebrow">Start with the agent</p>
+    <h2 id="setup-title">One copied prompt gives your agent a GPU lane.</h2>
+    <p>
+      Paste this into opencode, Claude Code, Gemini CLI, or another coding agent. The agent gets
+      the setup path, health check, and command shape in one instruction.
+    </p>
+    <div class="setup-actions">
+      <button class="button button--primary" type="button" data-copy-prompt>
+        Copy agent setup prompt
+      </button>
+      <a class="button button--secondary" href="https://github.com/ofekby/modal-uv">Star on GitHub</a>
+    </div>
+    <p class="copy-status" data-copy-status aria-live="polite">Ready to copy.</p>
+  </div>
+
+  <div class="prompt-card">
+    <div class="prompt-card__bar">
+      <span>agent prompt</span>
+      <span>modal-uv</span>
+    </div>
+    <textarea class="prompt-copy-source" data-prompt-source readonly>{agentPrompt}</textarea>
+  </div>
+</section>

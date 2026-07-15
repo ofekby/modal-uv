@@ -1,0 +1,218 @@
+---
+import CommandPanel from "../components/CommandPanel.astro";
+import ComputeField from "../components/ComputeField.astro";
+import CopyPrompt from "../components/CopyPrompt.astro";
+import UseCaseCard from "../components/UseCaseCard.astro";
+import "../styles/global.css";
+
+const title = "modal-uv | Local loop. Modal compute.";
+const description =
+  "Give ML projects and coding agents Modal GPUs, long-running jobs, logs, aborts, and persistent artifacts from one command.";
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="modal-uv home">
+        <span class="brand-mark">m/u</span>
+        <span>modal-uv</span>
+      </a>
+      <nav aria-label="Main navigation">
+        <a href="#use-cases">Use cases</a>
+        <a href="#agent-loop">Agent loop</a>
+        <a href="#agent-setup">Agent setup</a>
+        <a href="https://github.com/ofekby/modal-uv">GitHub</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero section-grid" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">ML/GPU development / agent-native execution</p>
+          <h1 id="hero-title">Local loop.<br />Modal compute.</h1>
+          <p class="hero-subcopy">
+            Give ML projects and coding agents on-demand GPUs, long-running jobs, logs, aborts,
+            and persistent artifacts from one command.
+          </p>
+          <p class="hero-support">
+            Run GPU tests, training scripts, CUDA checks, and checkpoint-producing jobs on Modal
+            while your agent keeps the edit-run-debug loop moving.
+          </p>
+          <div class="hero-actions">
+            <button class="button button--primary" type="button" data-scroll-copy>
+              Copy agent setup prompt
+            </button>
+            <a class="button button--secondary" href="https://github.com/ofekby/modal-uv">
+              Star on GitHub
+            </a>
+          </div>
+          <div class="install-strip" aria-label="Manual install command">
+            <span>manual start</span>
+            <code>pip install modal-uv</code>
+          </div>
+        </div>
+        <ComputeField />
+      </section>
+
+      <section class="use-cases" id="use-cases" aria-labelledby="use-cases-title">
+        <div class="section-heading">
+          <p class="eyebrow">Run the work your laptop should not</p>
+          <h2 id="use-cases-title">GPU jobs become part of the development loop.</h2>
+        </div>
+        <div class="use-grid">
+          <UseCaseCard
+            label="GPU tests"
+            title="Catch hardware failures before they leave the branch."
+            body="Run the test suite that needs real accelerator hardware while the local machine stays free for edits."
+            command="modal-uv run -- pytest -m gpu"
+            tone="mint"
+          />
+          <UseCaseCard
+            label="Training"
+            title="Launch training without turning the day into deployment work."
+            body="Send the heavy script to Modal, keep the command shape familiar, and come back to logs when needed."
+            command="modal-uv run -- python train.py"
+            tone="blue"
+          />
+          <UseCaseCard
+            label="CUDA checks"
+            title="Verify the thing that only fails where CUDA exists."
+            body="Run environment probes, kernels, and GPU smoke checks in the same synced work directory."
+            command="modal-uv exec -- nvidia-smi"
+            tone="violet"
+          />
+          <UseCaseCard
+            label="Artifacts"
+            title="Keep checkpoints where the next run can find them."
+            body="Write outputs to a Modal Volume so long jobs can produce durable artifacts instead of terminal-only proof."
+            command="/mnt/volume/checkpoints"
+            tone="lime"
+          />
+        </div>
+      </section>
+
+      <section class="agent-loop section-grid" id="agent-loop" aria-labelledby="agent-loop-title">
+        <div class="section-heading section-heading--sticky">
+          <p class="eyebrow">Give your agent a GPU lane</p>
+          <h2 id="agent-loop-title">Edit, run, read logs, debug, rerun.</h2>
+          <p>
+            `modal-uv` gives coding agents an operational loop they can repeat without asking you to
+            translate every experiment into Modal-specific ceremony.
+          </p>
+        </div>
+        <div class="loop-stack">
+          <CommandPanel
+            eyebrow="changed files"
+            title="Sync only the delta"
+            tone="violet"
+            items={[
+              { command: "src/model.py", note: "updated" },
+              { command: "tests/test_gpu.py", note: "updated" },
+              { command: "modal-uv.yaml", note: "runtime checked" },
+            ]}
+          />
+          <CommandPanel
+            eyebrow="spawn work"
+            title="Run on Modal"
+            tone="mint"
+            items={[
+              { command: "modal-uv run -- pytest -m gpu", note: "spawned fc-82a..." },
+              { command: "modal-uv logs fc-82a...", note: "tail output" },
+              { command: "modal-uv abort fc-82a...", note: "stop runaway work" },
+            ]}
+          />
+          <CommandPanel
+            eyebrow="durable output"
+            title="Artifacts survive the run"
+            tone="lime"
+            items={[
+              { command: "/mnt/volume/runs/exp-41", note: "metrics" },
+              { command: "/mnt/volume/checkpoints/last.pt", note: "checkpoint" },
+            ]}
+          />
+        </div>
+      </section>
+
+      <section class="observability" aria-labelledby="observe-title">
+        <div class="section-heading">
+          <p class="eyebrow">Keep long jobs observable</p>
+          <h2 id="observe-title">The terminal can move on. The run stays reachable.</h2>
+        </div>
+        <div class="observe-grid">
+          <div>
+            <span class="large-token">fc-...</span>
+            <h3>Execution IDs for follow-up</h3>
+            <p>Long runs return handles your agent can use later for logs or aborts.</p>
+          </div>
+          <div>
+            <span class="large-token">logs</span>
+            <h3>Output stays inspectable</h3>
+            <p>Debug from the command line instead of losing context after the first tail window.</p>
+          </div>
+          <div>
+            <span class="large-token">vol</span>
+            <h3>Artifacts land in a Volume</h3>
+            <p>Checkpoints, metrics, and generated files can persist across runs.</p>
+          </div>
+        </div>
+      </section>
+
+      <CopyPrompt />
+    </main>
+
+    <footer class="site-footer">
+      <span>modal-uv</span>
+      <a href="https://github.com/ofekby/modal-uv">GitHub</a>
+      <a href="https://pypi.org/project/modal-uv/">PyPI</a>
+      <a href="https://github.com/ofekby/modal-uv/blob/main/LICENSE">MIT License</a>
+    </footer>
+
+    <script>
+      const copyButtons = document.querySelectorAll("[data-copy-prompt]");
+      const copyStatus = document.querySelector("[data-copy-status]");
+      const scrollCopy = document.querySelector("[data-scroll-copy]");
+
+      scrollCopy?.addEventListener("click", () => {
+        document.querySelector("#agent-setup")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        window.setTimeout(() => document.querySelector("[data-copy-prompt]")?.click(), 350);
+      });
+
+      copyButtons.forEach((button) => {
+        button.addEventListener("click", async () => {
+          const promptSource = document.querySelector("[data-prompt-source]");
+          const prompt = promptSource instanceof HTMLTextAreaElement ? promptSource.value : "";
+          try {
+            await navigator.clipboard.writeText(prompt);
+            if (copyStatus) copyStatus.textContent = "Copied setup prompt.";
+          } catch {
+            if (copyStatus) {
+              copyStatus.textContent = "Clipboard blocked. Select the prompt text and copy it manually.";
+            }
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
