@@ -2,13 +2,25 @@ name: Release
 
 on:
   pull_request:
-    paths-ignore:
-      - site/**
+    paths:
+      - .github/workflows/release.yml
+      - pyproject.toml
+      - uv.lock
+      - src/**
+      - tests/**
+      - skills/**
+      - playbooks/**
   push:
     branches:
       - main
-    paths-ignore:
-      - site/**
+    paths:
+      - .github/workflows/release.yml
+      - pyproject.toml
+      - uv.lock
+      - src/**
+      - tests/**
+      - skills/**
+      - playbooks/**
 
 permissions:
   contents: read

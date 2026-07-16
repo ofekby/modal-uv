@@ -3,11 +3,23 @@ name: CI
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - site/**
+    paths:
+      - .github/workflows/ci.yml
+      - pyproject.toml
+      - uv.lock
+      - src/**
+      - tests/**
+      - skills/**
+      - playbooks/**
   pull_request:
-    paths-ignore:
-      - site/**
+    paths:
+      - .github/workflows/ci.yml
+      - pyproject.toml
+      - uv.lock
+      - src/**
+      - tests/**
+      - skills/**
+      - playbooks/**
 
 permissions:
   contents: read
