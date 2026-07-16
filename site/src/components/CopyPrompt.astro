@@ -25,15 +25,17 @@ const agentPrompt = `Install modal-uv globally and set it up:
       the setup path, health check, and command shape in one instruction.
     </p>
     <p class="setup-note">
-      Bring your own <a href="https://modal.com/signup" target="_blank" rel="noreferrer">Modal account</a>:
+      Bring your own <a id="setup-modal-signup-link" href="https://modal.com/signup" target="_blank" rel="noreferrer" data-posthog-link="modal_signup">Modal account</a>:
       onboarding opens login once, then your agent can spend Modal's <strong>$30 in free monthly credits</strong>{" "}
       on remote GPU runs.
     </p>
     <div class="setup-actions">
       <a
         class="button button--secondary"
+        id="setup-github-star-link"
         href="https://github.com/ofekby/modal-uv"
         target="_blank"
+        data-posthog-link="github"
         rel="noreferrer"
       >
         <Icon class="icon" name="mdi:github" aria-hidden="true" />
@@ -49,7 +51,7 @@ const agentPrompt = `Install modal-uv globally and set it up:
       <span>modal-uv</span>
     </div>
     <pre class="prompt-copy-source"><code data-prompt-source>{agentPrompt}</code></pre>
-    <button class="prompt-copy-button" type="button" data-copy-prompt aria-label="Copy agent setup prompt">
+    <button id="setup-copy-agent-prompt-button" class="prompt-copy-button" type="button" data-copy-prompt aria-label="Copy agent setup prompt">
       <Icon class="icon prompt-copy-icon" name="lucide:copy" aria-hidden="true" />
       <Icon class="icon prompt-copied-icon" name="lucide:check" aria-hidden="true" />
       <span class="prompt-copy-label">Copy prompt</span>

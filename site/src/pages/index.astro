@@ -2,6 +2,7 @@
 import CommandPanel from "../components/CommandPanel.astro";
 import ComputeField from "../components/ComputeField.astro";
 import CopyPrompt from "../components/CopyPrompt.astro";
+import PostHog from "../components/posthog.astro";
 import UseCaseCard from "../components/UseCaseCard.astro";
 import { Icon } from "astro-icon/components";
 import "../styles/global.css";
@@ -16,6 +17,7 @@ const assetBase = import.meta.env.BASE_URL;
 <!doctype html>
 <html lang="en">
   <head>
+    <PostHog />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -38,15 +40,15 @@ const assetBase = import.meta.env.BASE_URL;
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="#top" aria-label="modal-uv home">
+      <a id="brand-home-link" class="brand" href="#top" aria-label="modal-uv home">
         <img class="brand-mark" src={`${assetBase}modal-uv-logo.svg`} alt="" />
         <span>modal-uv</span>
       </a>
       <nav aria-label="Main navigation">
-        <a href="#use-cases">Use cases</a>
-        <a href="#agent-loop">Agent loop</a>
-        <a href="#agent-setup">Agent setup</a>
-        <a href="https://github.com/ofekby/modal-uv" target="_blank" rel="noreferrer">
+        <a id="nav-use-cases-link" href="#use-cases">Use cases</a>
+        <a id="nav-agent-loop-link" href="#agent-loop">Agent loop</a>
+        <a id="nav-agent-setup-link" href="#agent-setup">Agent setup</a>
+        <a id="nav-github-link" href="https://github.com/ofekby/modal-uv" target="_blank" rel="noreferrer" data-posthog-link="github">
           <Icon class="icon" name="mdi:github" aria-hidden="true" />
           GitHub
         </a>
@@ -62,15 +64,17 @@ const assetBase = import.meta.env.BASE_URL;
             Let coding agents use an ephemeral GPU as if it were local, from the same command loop.
           </p>
           <div class="hero-actions">
-            <button class="button button--primary" type="button" data-scroll-copy>
+            <button id="hero-copy-agent-setup-prompt-button" class="button button--primary" type="button" data-scroll-copy>
               <Icon class="icon" name="lucide:copy" aria-hidden="true" />
               Copy agent setup prompt
             </button>
             <a
               class="button button--secondary"
+              id="hero-github-star-link"
               href="https://github.com/ofekby/modal-uv"
               target="_blank"
               rel="noreferrer"
+              data-posthog-link="github"
             >
               <Icon class="icon" name="mdi:github" aria-hidden="true" />
               Star on GitHub
@@ -233,9 +237,9 @@ const assetBase = import.meta.env.BASE_URL;
 
     <footer class="site-footer">
       <span>modal-uv</span>
-      <a href="https://github.com/ofekby/modal-uv" target="_blank" rel="noreferrer">GitHub</a>
-      <a href="https://pypi.org/project/modal-uv/" target="_blank" rel="noreferrer">PyPI</a>
-      <a href="https://github.com/ofekby/modal-uv/blob/main/LICENSE" target="_blank" rel="noreferrer">
+      <a id="footer-github-link" href="https://github.com/ofekby/modal-uv" target="_blank" rel="noreferrer" data-posthog-link="github">GitHub</a>
+      <a id="footer-pypi-link" href="https://pypi.org/project/modal-uv/" target="_blank" rel="noreferrer" data-posthog-link="pypi">PyPI</a>
+      <a id="footer-license-link" href="https://github.com/ofekby/modal-uv/blob/main/LICENSE" target="_blank" rel="noreferrer" data-posthog-link="github">
         MIT License
       </a>
     </footer>
@@ -244,31 +248,58 @@ const assetBase = import.meta.env.BASE_URL;
       const copyButtons = document.querySelectorAll("[data-copy-prompt]");
       const copyStatus = document.querySelector("[data-copy-status]");
       const scrollCopy = document.querySelector("[data-scroll-copy]");
+      const setupCopyButton = document.querySelector("[data-copy-prompt]");
+
+      const copyPrompt = async (button, copyMethod) => {
+        const promptSource = document.querySelector("[data-prompt-source]");
+        const prompt = promptSource instanceof HTMLElement ? promptSource.textContent ?? "" : "";
+        try {
+          await navigator.clipboard.writeText(prompt);
+          button.classList.add("is-copied");
+          button.setAttribute("aria-label", "Agent setup prompt copied");
+          window.posthog?.capture("agent_setup_prompt_copied", {
+            copy_method: copyMethod,
+          });
+          window.setTimeout(() => {
+            button.classList.remove("is-copied");
+            button.setAttribute("aria-label", "Copy agent setup prompt");
+          }, 1800);
+        } catch (error) {
+          window.posthog?.captureException(error);
+          button.classList.remove("is-copied");
+          button.setAttribute("aria-label", "Copy agent setup prompt");
+          if (copyStatus) {
+            copyStatus.textContent = "Clipboard blocked. Select the prompt text and copy it manually.";
+          }
+        }
+      };
 
       scrollCopy?.addEventListener("click", () => {
         document.querySelector("#agent-setup")?.scrollIntoView({ behavior: "smooth", block: "start" });
-        window.setTimeout(() => document.querySelector("[data-copy-prompt]")?.click(), 950);
+        if (setupCopyButton instanceof HTMLElement) {
+          window.setTimeout(() => copyPrompt(setupCopyButton, "hero"), 950);
+        }
       });
 
       copyButtons.forEach((button) => {
-        button.addEventListener("click", async () => {
-          const promptSource = document.querySelector("[data-prompt-source]");
-          const prompt = promptSource instanceof HTMLElement ? promptSource.textContent ?? "" : "";
-          try {
-            await navigator.clipboard.writeText(prompt);
-            button.classList.add("is-copied");
-            button.setAttribute("aria-label", "Agent setup prompt copied");
-            window.setTimeout(() => {
-              button.classList.remove("is-copied");
-              button.setAttribute("aria-label", "Copy agent setup prompt");
-            }, 1800);
-          } catch {
-            button.classList.remove("is-copied");
-            button.setAttribute("aria-label", "Copy agent setup prompt");
-            if (copyStatus) {
-              copyStatus.textContent = "Clipboard blocked. Select the prompt text and copy it manually.";
-            }
+        button.addEventListener("click", () => copyPrompt(button, "setup_panel"));
+      });
+
+      document.querySelectorAll("[data-posthog-link]").forEach((link) => {
+        link.addEventListener("click", () => {
+          const destination = link.getAttribute("data-posthog-link");
+          if (destination === "pypi") {
+            window.posthog?.capture("pypi_link_clicked", { link_location: "footer" });
+            return;
           }
+          if (destination === "modal_signup") {
+            window.posthog?.capture("modal_signup_clicked", { link_location: "setup_panel" });
+            return;
+          }
+
+          window.posthog?.capture("github_link_clicked", {
+            link_location: link.closest("footer") ? "footer" : "content",
+          });
         });
       });
     </script>
