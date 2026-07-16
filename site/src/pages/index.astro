@@ -6,10 +6,11 @@ import UseCaseCard from "../components/UseCaseCard.astro";
 import { Icon } from "astro-icon/components";
 import "../styles/global.css";
 
-const title = "modal-uv | Local loop. Modal compute.";
+const title = "modal-uv | Local loop. Ephemeral GPU.";
 const description =
-  "Let coding agents use Modal GPUs as if they were local, from the same command loop.";
+  "Let coding agents use an ephemeral GPU as if it were local, from the same command loop.";
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
+const assetBase = import.meta.env.BASE_URL;
 ---
 
 <!doctype html>
@@ -27,6 +28,7 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <link rel="icon" type="image/svg+xml" href={`${assetBase}favicon.svg`} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -37,7 +39,7 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
   <body>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="modal-uv home">
-        <span class="brand-mark">m/u</span>
+        <img class="brand-mark" src={`${assetBase}modal-uv-logo.svg`} alt="" />
         <span>modal-uv</span>
       </a>
       <nav aria-label="Main navigation">
@@ -55,9 +57,9 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
       <section class="hero section-grid" aria-labelledby="hero-title">
         <div class="hero-copy">
           <p class="eyebrow">ML/GPU development / agent-native execution</p>
-          <h1 id="hero-title">Local loop.<br />Modal compute.</h1>
+          <h1 id="hero-title">Local loop.<br />Ephemeral GPU.</h1>
           <p class="hero-subcopy">
-            Let coding agents use Modal GPUs as if they were local, from the same command loop.
+            Let coding agents use an ephemeral GPU as if it were local, from the same command loop.
           </p>
           <div class="hero-actions">
             <button class="button button--primary" type="button" data-scroll-copy>
@@ -110,42 +112,56 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
       <section class="use-cases" id="use-cases" aria-labelledby="use-cases-title">
         <div class="section-heading">
           <p class="eyebrow">Run the work your laptop should not</p>
-          <h2 id="use-cases-title">GPU jobs become part of the development loop.</h2>
+          <h2 id="use-cases-title">Ephemeral hardware becomes part of the development loop.</h2>
         </div>
-        <div class="use-grid">
+        <div class="use-stack">
           <UseCaseCard
-            label="GPU tests"
-            title="Catch hardware failures before they leave the branch."
-            body="Run the test suite that needs real accelerator hardware while the local machine stays free for edits."
-            command="modal-uv run -- pytest -m gpu"
+            label="Model training"
+            title="Train on a GPU, keep the agent in the local loop."
+            body="Send training to an ephemeral T4, stream logs by execution ID, and persist the model plus metrics in a Modal Volume."
+            command="modal-uv run -- python train_mnist.py --epochs 3"
+            icon="lucide:brain-circuit"
+            snippet={[
+              "spawned fc-82a... on T4",
+              "logs: modal-uv logs fc-82a...",
+              "/mnt/artifacts/mnist-cnn.pt",
+              "/mnt/artifacts/mnist-metrics.json",
+            ]}
             tone="mint"
           />
           <UseCaseCard
-            label="Training"
-            title="Launch training without turning the day into deployment work."
-            body="Send the heavy script to Modal, keep the command shape familiar, and come back to logs when needed."
-            command="modal-uv run -- python train.py"
-            tone="blue"
-          />
-          <UseCaseCard
-            label="CUDA checks"
-            title="Verify the thing that only fails where CUDA exists."
-            body="Run environment probes, kernels, and GPU smoke checks in the same synced work directory."
-            command="modal-uv exec -- nvidia-smi"
+            label="Kernel development"
+            title="Edit CUDA locally, run kernels on an ephemeral GPU."
+            body="Let an agent patch kernels in your repo, then run them on an ephemeral GPU container with CUDA diagnostics and saved artifacts."
+            command="modal-uv exec -- ./scripts/build-and-run.sh"
+            icon="mdi:chip"
+            snippet={[
+              "nvcc --version",
+              "nvidia-smi",
+              "src/hello.cu -> /tmp/cuda-hello-build/hello",
+              "/mnt/artifacts/cuda-hello.log",
+            ]}
             tone="violet"
           />
           <UseCaseCard
-            label="Artifacts"
-            title="Keep checkpoints where the next run can find them."
-            body="Write outputs to a Modal Volume so long jobs can produce durable artifacts instead of terminal-only proof."
-            command="/mnt/volume/checkpoints"
+            label="Native builds"
+            title="Move CPU-heavy compilation off the laptop."
+            body="Build large native dependencies on a 64-CPU container and leave the static library plus manifest in a persistent artifact volume."
+            command="modal-uv exec -- ./scripts/build-rocksdb.sh"
+            icon="mdi:hammer-wrench"
+            snippet={[
+              "cpu count: 64",
+              "PORTABLE=1 make -j\"$(nproc)\" static_lib",
+              "/mnt/artifacts/librocksdb.a",
+              "/mnt/artifacts/rocksdb-build-manifest.txt",
+            ]}
             tone="lime"
           />
         </div>
       </section>
 
-      <section class="agent-loop section-grid" id="agent-loop" aria-labelledby="agent-loop-title">
-        <div class="section-heading section-heading--sticky">
+      <section class="agent-loop" id="agent-loop" aria-labelledby="agent-loop-title">
+        <div class="section-heading">
           <p class="eyebrow">Give your agent a GPU lane</p>
           <h2 id="agent-loop-title">Edit, run, read logs, debug, rerun.</h2>
           <p>
@@ -153,60 +169,62 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
             translate every experiment into Modal-specific ceremony.
           </p>
         </div>
-        <div class="loop-stack">
-          <CommandPanel
-            eyebrow="changed files"
-            title="Sync only the delta"
-            tone="violet"
-            items={[
-              { command: "src/model.py", note: "updated" },
-              { command: "tests/test_gpu.py", note: "updated" },
-              { command: "modal-uv.yaml", note: "runtime checked" },
-            ]}
-          />
-          <CommandPanel
-            eyebrow="spawn work"
-            title="Run on Modal"
-            tone="mint"
-            items={[
-              { command: "modal-uv run -- pytest -m gpu", note: "spawned fc-82a..." },
-              { command: "modal-uv logs fc-82a...", note: "tail output" },
-              { command: "modal-uv abort fc-82a...", note: "stop runaway work" },
-            ]}
-          />
-          <CommandPanel
-            eyebrow="durable output"
-            title="Artifacts survive the run"
-            tone="lime"
-            items={[
-              { command: "/mnt/volume/runs/exp-41", note: "metrics" },
-              { command: "/mnt/volume/checkpoints/last.pt", note: "checkpoint" },
-            ]}
-          />
-        </div>
-      </section>
-
-      <section class="observability" aria-labelledby="observe-title">
-        <div class="section-heading">
-          <p class="eyebrow">Keep long jobs observable</p>
-          <h2 id="observe-title">The terminal can move on. The run stays reachable.</h2>
-        </div>
-        <div class="observe-grid">
-          <div>
-            <span class="large-token">fc-...</span>
-            <h3>Execution IDs for follow-up</h3>
-            <p>Long runs return handles your agent can use later for logs or aborts.</p>
+        <div class="loop-diagram" aria-label="Agent loop from sync to run to inspect and back again">
+          <div class="loop-row">
+            <CommandPanel
+              step="01"
+              eyebrow="changed files"
+              title="Sync the delta"
+              tone="violet"
+              items={[
+                { command: "src/model.py", note: "updated" },
+                { command: "train_mnist.py", note: "updated" },
+                { command: "modal-uv.yaml", note: "checked" },
+              ]}
+            />
+            <CommandPanel
+              step="02"
+              eyebrow="remote run"
+              title="Spawn work"
+              tone="mint"
+              items={[
+                { command: "modal-uv run -- python train_mnist.py --epochs 3", note: "fc-82a..." },
+                { command: "modal-uv logs fc-82a...", note: "tail" },
+                { command: "modal-uv abort fc-82a...", note: "stop" },
+              ]}
+            />
+            <CommandPanel
+              step="03"
+              eyebrow="debug signal"
+              title="Inspect output"
+              tone="lime"
+              items={[
+                { command: "/mnt/volume/runs/exp-41", note: "metrics" },
+                { command: "/mnt/volume/checkpoints/last.pt", note: "ckpt" },
+                { command: "edit, then rerun", note: "loop" },
+              ]}
+            />
           </div>
-          <div>
-            <span class="large-token">logs</span>
-            <h3>Output stays inspectable</h3>
-            <p>Debug from the command line instead of losing context after the first tail window.</p>
-          </div>
-          <div>
-            <span class="large-token">vol</span>
-            <h3>Artifacts land in a Volume</h3>
-            <p>Checkpoints, metrics, and generated files can persist across runs.</p>
-          </div>
+          <svg class="loop-arrows" viewBox="0 0 1000 270" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <marker id="loop-arrow-head" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L9,4.5 L0,9 Z" fill="currentColor" />
+              </marker>
+            </defs>
+            <path class="loop-path loop-path--base" d="M310 92 L348 92" marker-end="url(#loop-arrow-head)" />
+            <path class="loop-path loop-path--glow" d="M310 92 L348 92" />
+            <path class="loop-path loop-path--base" d="M652 92 L690 92" marker-end="url(#loop-arrow-head)" />
+            <path class="loop-path loop-path--glow loop-path--delay-a" d="M652 92 L690 92" />
+          </svg>
+          <svg class="loop-return-arrows" viewBox="0 0 1000 74" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <marker id="loop-return-arrow-head" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L9,4.5 L0,9 Z" fill="currentColor" />
+              </marker>
+            </defs>
+            <path class="loop-path loop-path--base" d="M835 0 L835 56 L165 56 L165 0" marker-end="url(#loop-return-arrow-head)" />
+            <path class="loop-path loop-path--glow loop-path--delay-b" d="M835 0 L835 56 L165 56 L165 0" />
+          </svg>
         </div>
       </section>
 
@@ -229,17 +247,24 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
 
       scrollCopy?.addEventListener("click", () => {
         document.querySelector("#agent-setup")?.scrollIntoView({ behavior: "smooth", block: "start" });
-        window.setTimeout(() => document.querySelector("[data-copy-prompt]")?.click(), 350);
+        window.setTimeout(() => document.querySelector("[data-copy-prompt]")?.click(), 950);
       });
 
       copyButtons.forEach((button) => {
         button.addEventListener("click", async () => {
           const promptSource = document.querySelector("[data-prompt-source]");
-          const prompt = promptSource instanceof HTMLTextAreaElement ? promptSource.value : "";
+          const prompt = promptSource instanceof HTMLElement ? promptSource.textContent ?? "" : "";
           try {
             await navigator.clipboard.writeText(prompt);
-            if (copyStatus) copyStatus.textContent = "Copied setup prompt.";
+            button.classList.add("is-copied");
+            button.setAttribute("aria-label", "Agent setup prompt copied");
+            window.setTimeout(() => {
+              button.classList.remove("is-copied");
+              button.setAttribute("aria-label", "Copy agent setup prompt");
+            }, 1800);
           } catch {
+            button.classList.remove("is-copied");
+            button.setAttribute("aria-label", "Copy agent setup prompt");
             if (copyStatus) {
               copyStatus.textContent = "Clipboard blocked. Select the prompt text and copy it manually.";
             }

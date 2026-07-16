@@ -4,10 +4,16 @@ import { Icon } from "astro-icon/components";
 const agentPrompt = `Install modal-uv globally and set it up:
 1. Run: pip install modal-uv
 2. Run: modal-uv onboard
+   - This opens a browser for Modal OAuth authentication
+   - Complete the auth flow in the browser
+   - It also installs the use-modal-uv skill to detected coding agents
 3. In the project repo, run: modal-uv init
-4. Edit modal-uv.yaml for GPU, timeout, and volumes
+   - This creates modal-uv.yaml with defaults if missing
+   - It creates .modal-uv/ for generated state and adds it to .gitignore
+4. Edit modal-uv.yaml to set app_name, runtime.gpu, and volumes[].name for this project
 5. Run: modal-uv doctor
-6. Use modal-uv run -- <uv command> or modal-uv exec -- <shell command>`;
+   - This checks modal-uv health: auth state, volume existence, app deployment, daemon status
+   - Does not wake the container`;
 ---
 
 <section class="setup-panel" id="agent-setup" aria-labelledby="setup-title">
@@ -18,11 +24,12 @@ const agentPrompt = `Install modal-uv globally and set it up:
       Paste this into opencode, Claude Code, Gemini CLI, or another coding agent. The agent gets
       the setup path, health check, and command shape in one instruction.
     </p>
+    <p class="setup-note">
+      Bring your own <a href="https://modal.com/signup" target="_blank" rel="noreferrer">Modal account</a>:
+      onboarding opens login once, then your agent can spend Modal's <strong>$30 in free monthly credits</strong>{" "}
+      on remote GPU runs.
+    </p>
     <div class="setup-actions">
-      <button class="button button--primary" type="button" data-copy-prompt>
-        <Icon class="icon" name="lucide:copy" aria-hidden="true" />
-        Copy agent setup prompt
-      </button>
       <a
         class="button button--secondary"
         href="https://github.com/ofekby/modal-uv"
@@ -33,7 +40,7 @@ const agentPrompt = `Install modal-uv globally and set it up:
         Star on GitHub
       </a>
     </div>
-    <p class="copy-status" data-copy-status aria-live="polite">Ready to copy.</p>
+    <p class="copy-status" data-copy-status aria-live="polite"></p>
   </div>
 
   <div class="prompt-card">
@@ -41,6 +48,12 @@ const agentPrompt = `Install modal-uv globally and set it up:
       <span>agent prompt</span>
       <span>modal-uv</span>
     </div>
-    <textarea class="prompt-copy-source" data-prompt-source readonly>{agentPrompt}</textarea>
+    <pre class="prompt-copy-source"><code data-prompt-source>{agentPrompt}</code></pre>
+    <button class="prompt-copy-button" type="button" data-copy-prompt aria-label="Copy agent setup prompt">
+      <Icon class="icon prompt-copy-icon" name="lucide:copy" aria-hidden="true" />
+      <Icon class="icon prompt-copied-icon" name="lucide:check" aria-hidden="true" />
+      <span class="prompt-copy-label">Copy prompt</span>
+      <span class="prompt-copied-label">Prompt copied</span>
+    </button>
   </div>
 </section>

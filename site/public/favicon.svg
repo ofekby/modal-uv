@@ -1,0 +1,29 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+  <title id="title">modal-uv</title>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1019"/>
+      <stop offset="1" stop-color="#17111E"/>
+    </linearGradient>
+    <linearGradient id="modalMint" x1="25.4" y1="9.8" x2="82" y2="60.4" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D7FF64"/>
+      <stop offset="0.42" stop-color="#7BFFB2"/>
+      <stop offset="1" stop-color="#31D794"/>
+    </linearGradient>
+    <linearGradient id="logoPurple" x1="27.1" y1="10.3" x2="76.8" y2="68.7" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DE5FE9"/>
+      <stop offset="1" stop-color="#7BFFB2"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#tile)"/>
+  <g transform="translate(12 0) scale(0.23)">
+    <path d="M48 142V32L104 110L160 32V142" stroke="#DE5FE9" stroke-opacity="0.34" stroke-width="34" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <path d="M48 148V215C48 251 73 274 104 274C135 274 160 251 160 215V148" stroke="#7BFFB2" stroke-opacity="0.28" stroke-width="34" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <path d="M32 130V20L88 98L144 20V130" stroke="url(#modalMint)" stroke-width="34" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <path d="M32 136V203C32 239 57 262 88 262C119 262 144 239 144 203V136" stroke="url(#logoPurple)" stroke-width="34" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <path d="M16 20L32 30V130L16 124Z" fill="#D7FF64" opacity="0.18"/>
+    <path d="M144 20L160 30V130L144 124Z" fill="#0F0F0F" opacity="0.16"/>
+    <path d="M16 136L32 146V203C32 239 57 262 88 262V274C48 274 16 246 16 203V136Z" fill="#D7FF64" opacity="0.1"/>
+    <path d="M144 136L160 146V203C160 246 128 274 88 274V262C119 262 144 239 144 203V136Z" fill="#0F0F0F" opacity="0.12"/>
+  </g>
+</svg>

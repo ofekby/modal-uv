@@ -1,6 +1,6 @@
 # CUDA Hello World
 
-Use `modal-uv` to compile and run a CUDA hello-world kernel on a remote T4 GPU when no local CUDA toolchain is available.
+Use `modal-uv` to develop and run a CUDA hello-world kernel on a remote ephemeral T4 GPU while keeping the local edit loop unchanged.
 
 ## Run
 
