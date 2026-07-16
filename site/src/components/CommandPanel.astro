@@ -1,0 +1,32 @@
+---
+interface CommandItem {
+  command: string;
+  note?: string;
+}
+
+interface Props {
+  eyebrow: string;
+  title: string;
+  items: CommandItem[];
+  step?: string;
+  tone?: "mint" | "violet" | "lime" | "blue";
+}
+
+const { eyebrow, title, items, step, tone = "mint" } = Astro.props;
+---
+
+<article class:list={["command-panel", `command-panel--${tone}`]}>
+  <div class="command-panel__top">
+    {step && <span class="loop-step">{step}</span>}
+    <p class="eyebrow">{eyebrow}</p>
+  </div>
+  <h3>{title}</h3>
+  <div class="terminal-lines" aria-label={title}>
+    {items.map((item) => (
+      <div class="terminal-line">
+        <code>{item.command}</code>
+        {item.note && <span>{item.note}</span>}
+      </div>
+    ))}
+  </div>
+</article>

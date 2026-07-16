@@ -1,0 +1,32 @@
+---
+import { Icon } from "astro-icon/components";
+
+interface Props {
+  label: string;
+  title: string;
+  body: string;
+  command: string;
+  snippet: string[];
+  icon: string;
+  tone?: "mint" | "violet" | "lime" | "blue";
+}
+
+const { label, title, body, command, snippet, icon, tone = "mint" } = Astro.props;
+---
+
+<article class:list={["use-card", `use-card--${tone}`]}>
+  <div class="use-card__copy">
+    <div class="use-card__header">
+      <p class="use-card__title">
+        <Icon name={icon} aria-hidden="true" />
+        <span>{label}</span>
+      </p>
+      <span class="use-card__divider" aria-hidden="true"></span>
+      <h3>{title}</h3>
+    </div>
+    <p class="use-card__body">{body}</p>
+  </div>
+  <pre class="use-card__snippet"><code><span class="snippet-command">$ {command}</span>{snippet.map((line) => (
+    <span>{line}</span>
+  ))}</code></pre>
+</article>

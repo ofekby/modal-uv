@@ -10,3 +10,7 @@ dist/
 build/
 *.egg-info/
 .modal-uv/
+.superpowers/
+site/node_modules/
+site/.astro/
+site/dist/

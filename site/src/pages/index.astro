@@ -1,0 +1,307 @@
+---
+import CommandPanel from "../components/CommandPanel.astro";
+import ComputeField from "../components/ComputeField.astro";
+import CopyPrompt from "../components/CopyPrompt.astro";
+import PostHog from "../components/posthog.astro";
+import UseCaseCard from "../components/UseCaseCard.astro";
+import { Icon } from "astro-icon/components";
+import "../styles/global.css";
+
+const title = "modal-uv | Local loop. Ephemeral GPU.";
+const description =
+  "Let coding agents use an ephemeral GPU as if it were local, from the same command loop.";
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
+const assetBase = import.meta.env.BASE_URL;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <PostHog />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <link rel="icon" type="image/svg+xml" href={`${assetBase}favicon.svg`} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header class="site-header">
+      <a id="brand-home-link" class="brand" href="#top" aria-label="modal-uv home">
+        <img class="brand-mark" src={`${assetBase}modal-uv-logo.svg`} alt="" />
+        <span>modal-uv</span>
+      </a>
+      <nav aria-label="Main navigation">
+        <a id="nav-use-cases-link" href="#use-cases">Use cases</a>
+        <a id="nav-agent-loop-link" href="#agent-loop">Agent loop</a>
+        <a id="nav-agent-setup-link" href="#agent-setup">Agent setup</a>
+        <a id="nav-github-link" href="https://github.com/ofekby/modal-uv" target="_blank" rel="noreferrer" data-posthog-link="github">
+          <Icon class="icon" name="mdi:github" aria-hidden="true" />
+          GitHub
+        </a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero section-grid" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">ML/GPU development / agent-native execution</p>
+          <h1 id="hero-title">Local loop.<br />Ephemeral GPU.</h1>
+          <p class="hero-subcopy">
+            Let coding agents use an ephemeral GPU as if it were local, from the same command loop.
+          </p>
+          <div class="hero-actions">
+            <button id="hero-copy-agent-setup-prompt-button" class="button button--primary" type="button" data-scroll-copy>
+              <Icon class="icon" name="lucide:copy" aria-hidden="true" />
+              Copy agent setup prompt
+            </button>
+            <a
+              class="button button--secondary"
+              id="hero-github-star-link"
+              href="https://github.com/ofekby/modal-uv"
+              target="_blank"
+              rel="noreferrer"
+              data-posthog-link="github"
+            >
+              <Icon class="icon" name="mdi:github" aria-hidden="true" />
+              Star on GitHub
+            </a>
+          </div>
+          <div class="agent-compat" aria-label="Compatible coding agents">
+            <p>Works with any coding agent</p>
+            <ul>
+              <li>
+                <Icon name="simple-icons:claude" aria-hidden="true" />
+                <span>Claude Code</span>
+              </li>
+              <li>
+                <Icon name="simple-icons:opencode" aria-hidden="true" />
+                <span>opencode</span>
+              </li>
+              <li>
+                <Icon name="openclaw" aria-hidden="true" />
+                <span>OpenClaw</span>
+              </li>
+              <li>
+                <Icon name="simple-icons:googlegemini" aria-hidden="true" />
+                <span>Gemini</span>
+              </li>
+              <li>
+                <Icon name="lucide:ellipsis" aria-hidden="true" />
+                <span>And more...</span>
+              </li>
+            </ul>
+          </div>
+          <div class="install-strip" aria-label="Manual install command">
+            <span>manual start</span>
+            <code>pip install modal-uv</code>
+          </div>
+        </div>
+        <ComputeField />
+      </section>
+
+      <section class="use-cases" id="use-cases" aria-labelledby="use-cases-title">
+        <div class="section-heading">
+          <p class="eyebrow">Run the work your laptop should not</p>
+          <h2 id="use-cases-title">Ephemeral hardware becomes part of the development loop.</h2>
+        </div>
+        <div class="use-stack">
+          <UseCaseCard
+            label="Model training"
+            title="Train on a GPU, keep the agent in the local loop."
+            body="Send training to an ephemeral T4, stream logs by execution ID, and persist the model plus metrics in a Modal Volume."
+            command="modal-uv run -- python train_mnist.py --epochs 3"
+            icon="lucide:brain-circuit"
+            snippet={[
+              "spawned fc-82a... on T4",
+              "logs: modal-uv logs fc-82a...",
+              "/mnt/artifacts/mnist-cnn.pt",
+              "/mnt/artifacts/mnist-metrics.json",
+            ]}
+            tone="mint"
+          />
+          <UseCaseCard
+            label="Kernel development"
+            title="Edit CUDA locally, run kernels on an ephemeral GPU."
+            body="Let an agent patch kernels in your repo, then run them on an ephemeral GPU container with CUDA diagnostics and saved artifacts."
+            command="modal-uv exec -- ./scripts/build-and-run.sh"
+            icon="mdi:chip"
+            snippet={[
+              "nvcc --version",
+              "nvidia-smi",
+              "src/hello.cu -> /tmp/cuda-hello-build/hello",
+              "/mnt/artifacts/cuda-hello.log",
+            ]}
+            tone="violet"
+          />
+          <UseCaseCard
+            label="Native builds"
+            title="Move CPU-heavy compilation off the laptop."
+            body="Build large native dependencies on a 64-CPU container and leave the static library plus manifest in a persistent artifact volume."
+            command="modal-uv exec -- ./scripts/build-rocksdb.sh"
+            icon="mdi:hammer-wrench"
+            snippet={[
+              "cpu count: 64",
+              "PORTABLE=1 make -j\"$(nproc)\" static_lib",
+              "/mnt/artifacts/librocksdb.a",
+              "/mnt/artifacts/rocksdb-build-manifest.txt",
+            ]}
+            tone="lime"
+          />
+        </div>
+      </section>
+
+      <section class="agent-loop" id="agent-loop" aria-labelledby="agent-loop-title">
+        <div class="section-heading">
+          <p class="eyebrow">Give your agent a GPU lane</p>
+          <h2 id="agent-loop-title">Edit, run, read logs, debug, rerun.</h2>
+          <p>
+            `modal-uv` gives coding agents an operational loop they can repeat without asking you to
+            translate every experiment into Modal-specific ceremony.
+          </p>
+        </div>
+        <div class="loop-diagram" aria-label="Agent loop from sync to run to inspect and back again">
+          <div class="loop-row">
+            <CommandPanel
+              step="01"
+              eyebrow="changed files"
+              title="Sync the delta"
+              tone="violet"
+              items={[
+                { command: "src/model.py", note: "updated" },
+                { command: "train_mnist.py", note: "updated" },
+                { command: "modal-uv.yaml", note: "checked" },
+              ]}
+            />
+            <CommandPanel
+              step="02"
+              eyebrow="remote run"
+              title="Spawn work"
+              tone="mint"
+              items={[
+                { command: "modal-uv run -- python train_mnist.py --epochs 3", note: "fc-82a..." },
+                { command: "modal-uv logs fc-82a...", note: "tail" },
+                { command: "modal-uv abort fc-82a...", note: "stop" },
+              ]}
+            />
+            <CommandPanel
+              step="03"
+              eyebrow="debug signal"
+              title="Inspect output"
+              tone="lime"
+              items={[
+                { command: "/mnt/volume/runs/exp-41", note: "metrics" },
+                { command: "/mnt/volume/checkpoints/last.pt", note: "ckpt" },
+                { command: "edit, then rerun", note: "loop" },
+              ]}
+            />
+          </div>
+          <svg class="loop-arrows" viewBox="0 0 1000 270" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <marker id="loop-arrow-head" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L9,4.5 L0,9 Z" fill="currentColor" />
+              </marker>
+            </defs>
+            <path class="loop-path loop-path--base" d="M310 92 L348 92" marker-end="url(#loop-arrow-head)" />
+            <path class="loop-path loop-path--glow" d="M310 92 L348 92" />
+            <path class="loop-path loop-path--base" d="M652 92 L690 92" marker-end="url(#loop-arrow-head)" />
+            <path class="loop-path loop-path--glow loop-path--delay-a" d="M652 92 L690 92" />
+          </svg>
+          <svg class="loop-return-arrows" viewBox="0 0 1000 74" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <marker id="loop-return-arrow-head" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L9,4.5 L0,9 Z" fill="currentColor" />
+              </marker>
+            </defs>
+            <path class="loop-path loop-path--base" d="M835 0 L835 56 L165 56 L165 0" marker-end="url(#loop-return-arrow-head)" />
+            <path class="loop-path loop-path--glow loop-path--delay-b" d="M835 0 L835 56 L165 56 L165 0" />
+          </svg>
+        </div>
+      </section>
+
+      <CopyPrompt />
+    </main>
+
+    <footer class="site-footer">
+      <span>modal-uv</span>
+      <a id="footer-github-link" href="https://github.com/ofekby/modal-uv" target="_blank" rel="noreferrer" data-posthog-link="github">GitHub</a>
+      <a id="footer-pypi-link" href="https://pypi.org/project/modal-uv/" target="_blank" rel="noreferrer" data-posthog-link="pypi">PyPI</a>
+      <a id="footer-license-link" href="https://github.com/ofekby/modal-uv/blob/main/LICENSE" target="_blank" rel="noreferrer" data-posthog-link="github">
+        MIT License
+      </a>
+    </footer>
+
+    <script>
+      const copyButtons = document.querySelectorAll("[data-copy-prompt]");
+      const copyStatus = document.querySelector("[data-copy-status]");
+      const scrollCopy = document.querySelector("[data-scroll-copy]");
+      const setupCopyButton = document.querySelector("[data-copy-prompt]");
+
+      const copyPrompt = async (button, copyMethod) => {
+        const promptSource = document.querySelector("[data-prompt-source]");
+        const prompt = promptSource instanceof HTMLElement ? promptSource.textContent ?? "" : "";
+        try {
+          await navigator.clipboard.writeText(prompt);
+          button.classList.add("is-copied");
+          button.setAttribute("aria-label", "Agent setup prompt copied");
+          window.posthog?.capture("agent_setup_prompt_copied", {
+            copy_method: copyMethod,
+          });
+          window.setTimeout(() => {
+            button.classList.remove("is-copied");
+            button.setAttribute("aria-label", "Copy agent setup prompt");
+          }, 1800);
+        } catch (error) {
+          window.posthog?.captureException(error);
+          button.classList.remove("is-copied");
+          button.setAttribute("aria-label", "Copy agent setup prompt");
+          if (copyStatus) {
+            copyStatus.textContent = "Clipboard blocked. Select the prompt text and copy it manually.";
+          }
+        }
+      };
+
+      scrollCopy?.addEventListener("click", () => {
+        document.querySelector("#agent-setup")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (setupCopyButton instanceof HTMLElement) {
+          window.setTimeout(() => copyPrompt(setupCopyButton, "hero"), 950);
+        }
+      });
+
+      copyButtons.forEach((button) => {
+        button.addEventListener("click", () => copyPrompt(button, "setup_panel"));
+      });
+
+      document.querySelectorAll("[data-posthog-link]").forEach((link) => {
+        link.addEventListener("click", () => {
+          const destination = link.getAttribute("data-posthog-link");
+          if (destination === "pypi") {
+            window.posthog?.capture("pypi_link_clicked", { link_location: "footer" });
+            return;
+          }
+          if (destination === "modal_signup") {
+            window.posthog?.capture("modal_signup_clicked", { link_location: "setup_panel" });
+            return;
+          }
+
+          window.posthog?.capture("github_link_clicked", {
+            link_location: link.closest("footer") ? "footer" : "content",
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -12,7 +12,7 @@
 
 `modal-uv` lets a normal local project borrow Modal compute without turning the project into a Modal app.
 
-Use it when the local development loop is right, but the local machine is not: build native libraries on many CPUs, compile and run CUDA code on a remote GPU, run GPU tests, train models, or write artifacts and checkpoints into a persistent Modal Volume.
+Use it when the local development loop is right, but the local machine is not: build native libraries on many CPUs, develop kernels against a remote ephemeral GPU, train models, or write artifacts and checkpoints into a persistent Modal Volume.
 
 It has a `uv`-native path for Python projects and a general shell path for everything else. `modal-uv run -- ...` executes ordinary `uv` workflows remotely, while `modal-uv exec -- ...` runs shell commands in the synced Modal work directory for projects that are not necessarily Python or `uv` based. The `uv` project model still makes a good default: reproducible dependencies, modern project layout, and a command shape coding agents already understand.
 

@@ -1,0 +1,92 @@
+<figure class="compute-field chat-illustration" aria-label="Animated coding agent session running modal-uv on Modal">
+  <div class="agent-terminal" aria-label="Animated opencode-style coding agent session">
+    <div class="agent-terminal__bar">
+      <div class="terminal-lights" aria-hidden="true"><span></span><span></span><span></span></div>
+      <span class="terminal-title">Coding Agent</span>
+      <span class="terminal-status">session running</span>
+    </div>
+
+    <div class="agent-terminal__body">
+      <ol class="agent-chat" aria-label="Example coding agent session">
+        <li class="chat-row chat-row--prompt">
+          <span class="chat-gutter" aria-hidden="true">&gt;</span>
+          <div class="chat-line">
+            <p>Run the benchmark on an ephemeral GPU, fix failures, and keep the results.</p>
+          </div>
+        </li>
+
+        <li class="chat-row chat-row--loading chat-row--agent-loading">
+          <span class="chat-gutter" aria-hidden="true">·</span>
+          <div class="chat-line chat-line--loading">
+            <span class="loading-dots" aria-label="Loading"><i></i><i></i><i></i></span>
+          </div>
+        </li>
+
+        <li class="chat-row chat-row--agent">
+          <span class="chat-gutter" aria-hidden="true">✦</span>
+          <div class="chat-line chat-line--block">
+            <pre class="diff-block"><code><span class="diff-context">  7  def run_benchmark():</span>
+<span class="diff-remove">- 8      x = torch.randn(8192, 8192)</span>
+<span class="diff-add">+ 8      x = torch.randn(8192, 8192, device="cuda")</span>
+<span class="diff-context">  9      return kernel(x).mean().item()</span></code></pre>
+          </div>
+        </li>
+
+        <li class="chat-row chat-row--loading chat-row--tool-loading">
+          <span class="chat-gutter" aria-hidden="true">·</span>
+          <div class="chat-line chat-line--loading">
+            <span class="loading-dots" aria-label="Loading"><i></i><i></i><i></i></span>
+          </div>
+        </li>
+
+        <li class="chat-row chat-row--tool">
+          <span class="chat-gutter" aria-hidden="true">$</span>
+          <div class="chat-line chat-line--block">
+            <pre><code>$ modal-uv run -- python run_benchmark.py
+sync 18 changed files
+spawned fc-82a... tailing logs</code></pre>
+          </div>
+        </li>
+
+        <li class="chat-row chat-row--error">
+          <span class="chat-gutter" aria-hidden="true">×</span>
+          <div class="chat-line">
+            <p>RuntimeError: expected all tensors on cuda:0, got cpu</p>
+          </div>
+        </li>
+
+        <li class="chat-row chat-row--loading chat-row--fix-loading">
+          <span class="chat-gutter" aria-hidden="true">·</span>
+          <div class="chat-line chat-line--loading">
+            <span class="loading-dots" aria-label="Loading"><i></i><i></i><i></i></span>
+          </div>
+        </li>
+
+        <li class="chat-row chat-row--agent">
+          <span class="chat-gutter" aria-hidden="true">✦</span>
+          <div class="chat-line chat-line--block">
+            <pre class="diff-block"><code><span class="diff-context"> 14  def load_inputs():</span>
+<span class="diff-remove">-15      weights = load_weights()</span>
+<span class="diff-add">+15      weights = load_weights().to("cuda")</span>
+<span class="diff-context"> 16      return x, weights</span></code></pre>
+          </div>
+        </li>
+
+        <li class="chat-row chat-row--loading chat-row--rerun-loading">
+          <span class="chat-gutter" aria-hidden="true">·</span>
+          <div class="chat-line chat-line--loading">
+            <span class="loading-dots" aria-label="Loading"><i></i><i></i><i></i></span>
+          </div>
+        </li>
+
+        <li class="chat-row chat-row--success">
+          <span class="chat-gutter" aria-hidden="true">✓</span>
+          <div class="chat-line chat-line--block">
+            <pre><code>$ modal-uv run -- python run_benchmark.py
+31.4 ms p50 / logs saved / results persisted</code></pre>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+</figure>
